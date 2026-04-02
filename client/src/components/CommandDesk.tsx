@@ -14,6 +14,7 @@ import {
   MapPin,
   AlertTriangle,
   FileText,
+  Network,
 } from "lucide-react";
 
 interface CommandDeskProps {
@@ -191,17 +192,52 @@ export function CommandDesk({ onNavigate }: CommandDeskProps) {
         </Card>
       </div>
 
-      {/* Quick Rumor Peek */}
-      {state.rumors.length > 0 && (
-        <Card className="border-dashed border-chart-2/30">
+      {/* Network Status + Rumor */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {/* Network Status Widget */}
+        <Card className="border-dashed border-primary/20" data-testid="card-network-status">
           <CardContent className="py-3 px-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Latest Rumor</p>
-            <p className="text-sm italic" data-testid="text-latest-rumor">
-              🐦‍⬛ "{state.rumors[state.rumors.length - 1]}"
-            </p>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Network className="h-3.5 w-3.5 text-primary" />
+              <p className="text-xs font-medium uppercase tracking-wider">Market Network</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Txns</p>
+                <p className="text-sm font-bold tabular-nums">{state.networkStats.totalTransactions}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Nodes</p>
+                <p className="text-sm font-bold tabular-nums">{state.networkStats.counterpartiesUsed}/{state.counterparties.length}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Settlement</p>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Simulated</p>
+                </div>
+              </div>
+            </div>
+            {state.networkStats.favoriteCounterparty && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Top partner: <span className="font-medium text-foreground">{state.networkStats.favoriteCounterparty}</span>
+              </p>
+            )}
           </CardContent>
         </Card>
-      )}
+
+        {/* Quick Rumor Peek */}
+        {state.rumors.length > 0 && (
+          <Card className="border-dashed border-chart-2/30">
+            <CardContent className="py-3 px-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Latest Rumor</p>
+              <p className="text-sm italic" data-testid="text-latest-rumor">
+                🐦‍⬛ "{state.rumors[state.rumors.length - 1]}"
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       {/* Daily Report Summary (when in reports phase) */}
       {state.dayPhase === "reports" && state.dailyReport && (

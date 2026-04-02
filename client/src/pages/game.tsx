@@ -8,6 +8,7 @@ import { DistrictMap } from "@/components/DistrictMap";
 import { MissionComposer } from "@/components/MissionComposer";
 import { DailyReport } from "@/components/DailyReport";
 import { RumorTicker } from "@/components/RumorTicker";
+import { MarketNetwork } from "@/components/MarketNetwork";
 import {
   LayoutDashboard,
   Users,
@@ -15,6 +16,7 @@ import {
   Send,
   FileText,
   Radio,
+  Network,
 } from "lucide-react";
 
 export default function GamePage() {
@@ -70,7 +72,7 @@ export default function GamePage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6 h-10" data-testid="tab-list">
+          <TabsList className="grid w-full grid-cols-7 h-10" data-testid="tab-list">
             <TabsTrigger value="command" className="text-xs gap-1.5" data-testid="tab-command">
               <LayoutDashboard className="h-3.5 w-3.5" /> Command
             </TabsTrigger>
@@ -79,6 +81,9 @@ export default function GamePage() {
             </TabsTrigger>
             <TabsTrigger value="districts" className="text-xs gap-1.5" data-testid="tab-districts">
               <Map className="h-3.5 w-3.5" /> Districts
+            </TabsTrigger>
+            <TabsTrigger value="network" className="text-xs gap-1.5" data-testid="tab-network">
+              <Network className="h-3.5 w-3.5" /> Network
             </TabsTrigger>
             <TabsTrigger value="missions" className="text-xs gap-1.5" data-testid="tab-missions">
               <Send className="h-3.5 w-3.5" /> Missions
@@ -99,6 +104,9 @@ export default function GamePage() {
           </TabsContent>
           <TabsContent value="districts">
             <DistrictMap />
+          </TabsContent>
+          <TabsContent value="network">
+            <MarketNetwork />
           </TabsContent>
           <TabsContent value="missions">
             <MissionComposer onMissionDispatched={() => {}} />

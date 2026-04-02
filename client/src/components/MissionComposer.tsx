@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
-import { canAffordMission } from "@/lib/gameEngine";
-import type { MissionTemplate, RiskPosture, Agent, District } from "@/lib/gameData";
+import { canAffordMission, getCounterpartiesForAction } from "@/lib/gameEngine";
+import { ACTION_TYPE_INFO, type MissionTemplate, type RiskPosture, type Agent, type District } from "@/lib/gameData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import {
   Shield,
   Coins,
   ChevronRight,
+  Network,
 } from "lucide-react";
 
 interface MissionComposerProps {
@@ -289,6 +290,39 @@ export function MissionComposer({ onMissionDispatched }: MissionComposerProps) {
                 <p className="text-xs text-muted-foreground">
                   Posture: {POSTURE_INFO[riskPosture].emoji} {POSTURE_INFO[riskPosture].label}
                 </p>
+              </div>
+            )}
+
+            {/* Counterparty Route Preview */}
+            {selectedMission && selectedDistrict && (
+              <div className="rounded-md border border-primary/10 p-2.5 space-y-1.5" data-testid="counterparty-preview">
+                <div className="flex items-center gap-1.5">
+                  <Network className="h-3 w-3 text-primary" />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Network Route Preview</span>
+                </div>
+                {(selectedMission.actionSequence || []).map((action, i) => {
+                  const info = ACTION_TYPE_INFO[action];
+                  const candidates = getCounterpartiesForAction(state.counterparties, action, selectedDistrict.id);
+                  return (
+                    <div key={i} className="flex items-center gap-1.5 text-xs">
+                      <span className="text-muted-foreground tabular-nums w-4">{i + 1}.</span>
+                      <Badge variant="outline" className="text-[9px] py-0 px-1 gap-0.5">
+                        {info.emoji} {info.label}
+                      </Badge>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="text-xs truncate">
+                        {candidates.length > 0
+                          ? candidates.map(c => `${c.emoji} ${c.name}`).join(" / ")
+                          : "No local provider"
+                        }
+                      </span>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400">Settlement: Simulated</span>
+                </div>
               </div>
             )}
 

@@ -1,10 +1,75 @@
 // ═══════════════════════════════════════════════════════════════
 // THE VELVET LEDGER BAZAAR — Game Data & Types
+// Two-sided agent interaction model with counterparty network
 // ═══════════════════════════════════════════════════════════════
 
 export type RiskPosture = "cautious" | "balanced" | "reckless" | "theatrical";
 export type AgentStatus = "idle" | "deployed" | "resting";
 export type MissionStatus = "planning" | "in_progress" | "completed";
+
+// ── Settlement Route ─────────────────────────────────────────
+// How a transaction settles. "simulated" = local game logic.
+// Future: "testnet" | "mainnet" for real Stellar transactions.
+export type SettlementMode = "simulated" | "testnet";
+
+// ── Action Types ─────────────────────────────────────────────
+// Modular action categories agents perform through counterparties.
+// Each maps to specific counterparty types and has chain-backable semantics.
+export type ActionType =
+  | "trade_execution"   // Buy/sell goods through a merchant
+  | "paid_intel"        // Purchase information from a data vendor or rumor bureau
+  | "permit_filing"     // Acquire permits/licenses from bureaucratic offices
+  | "inspection"        // Quality/compliance checks through inspectors
+  | "logistics"         // Route goods through logistics brokers
+  | "brand_promotion"   // Marketing through event handlers or criers
+  | "negotiation"       // Haggling sessions with guild offices or merchants
+  | "sabotage_op";      // Covert operations through shadow brokers
+
+// ── Counterparty / Market Node ──────────────────────────────
+// The "other side" that agents interact with.
+export type CounterpartyType =
+  | "merchant"          // Buys/sells goods
+  | "guild_office"      // Regulates trade, issues permits
+  | "permit_desk"       // Bureaucratic permit processing
+  | "rumor_bureau"      // Intel broker, sells market rumors
+  | "logistics_broker"  // Handles shipping, routing, delivery
+  | "inspector"         // Quality control, compliance audits
+  | "data_vendor"       // Sells analytics & market data
+  | "rival_handler"     // Competitor intelligence & sabotage services
+  | "event_promoter";   // Festival sponsors, brand placement
+
+export interface Counterparty {
+  id: string;
+  name: string;
+  type: CounterpartyType;
+  emoji: string;
+  description: string;
+  quirk: string;                  // Funny personality trait
+  reliability: number;            // 0-1: how often they deliver as promised
+  greedFactor: number;            // 0-1: how much they mark up / skim
+  districtIds: string[];          // Which districts they operate in
+  supportedActions: ActionType[]; // Which action types they handle
+  reputation: number;             // Their standing in the market (0-100)
+  settlementMode: SettlementMode; // How txns settle (simulated for now)
+  mood: "cooperative" | "neutral" | "hostile" | "chaotic";
+  interactionCount: number;       // How many times player has dealt with them
+}
+
+// ── Action Step ──────────────────────────────────────────────
+// A single interaction within a mission resolution.
+// Missions now produce a sequence of these showing the agent
+// navigating the counterparty network.
+export interface ActionStep {
+  actionType: ActionType;
+  counterpartyId: string;
+  counterpartyName: string;
+  counterpartyEmoji: string;
+  description: string;            // What happened in this step
+  cost: number;                   // How much this step cost
+  settlementMode: SettlementMode; // How this step settled
+  success: boolean;               // Did this step succeed?
+  stellarTxId?: string;           // Future: actual Stellar tx hash
+}
 
 export interface Agent {
   id: string;
@@ -48,6 +113,8 @@ export interface MissionTemplate {
   riskLevel: number;       // 1-5
   requiredSpecialty?: string;
   districtId: string;
+  // NEW: which action types this mission involves (engine resolves these through counterparties)
+  actionSequence: ActionType[];
 }
 
 export interface ActiveMission {
@@ -72,6 +139,10 @@ export interface MissionResult {
   details: string[];
   rumorGained?: string;
   sideEffect?: string;
+  // NEW: counterparty interaction trail
+  actionSteps: ActionStep[];       // Ordered record of who the agent dealt with
+  primaryCounterparty?: string;    // Name of the main counterparty
+  settlementSummary: SettlementMode; // Overall settlement mode for this mission
 }
 
 export interface GameState {
@@ -81,12 +152,22 @@ export interface GameState {
   brandName: string;
   agents: Agent[];
   districts: District[];
+  counterparties: Counterparty[];  // NEW: the market network
   activeMissions: ActiveMission[];
   completedMissions: ActiveMission[];
   rumors: string[];
   dayPhase: "morning" | "planning" | "resolution" | "reports";
   eventLog: string[];
   dailyReport?: DailyReport;
+  networkStats: NetworkStats;      // NEW: aggregate network metrics
+}
+
+export interface NetworkStats {
+  totalTransactions: number;
+  simulatedTransactions: number;
+  testnetTransactions: number;     // Always 0 for now — future
+  counterpartiesUsed: number;
+  favoriteCounterparty?: string;
 }
 
 export interface DailyReport {
@@ -98,6 +179,9 @@ export interface DailyReport {
   reputationChange: number;
   headlines: string[];
   rumors: string[];
+  // NEW: counterparty network summary for the day
+  counterpartiesEngaged: string[];  // Names of counterparties used today
+  actionBreakdown: { action: ActionType; count: number }[]; // How many of each action type
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -221,6 +305,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 55,
         riskLevel: 2,
         districtId: "velvet-steps",
+        actionSequence: ["negotiation", "trade_execution", "logistics"],
       },
       {
         id: "vs-brand-campaign",
@@ -231,6 +316,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 25,
         riskLevel: 3,
         districtId: "velvet-steps",
+        actionSequence: ["permit_filing", "brand_promotion"],
       },
       {
         id: "vs-investigate-rival",
@@ -241,6 +327,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 10,
         riskLevel: 2,
         districtId: "velvet-steps",
+        actionSequence: ["paid_intel", "inspection"],
       },
     ],
   },
@@ -268,6 +355,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 40,
         riskLevel: 4,
         districtId: "fungal-quarter",
+        actionSequence: ["paid_intel", "negotiation", "trade_execution"],
       },
       {
         id: "fq-scout-routes",
@@ -278,6 +366,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 20,
         riskLevel: 3,
         districtId: "fungal-quarter",
+        actionSequence: ["paid_intel", "logistics"],
       },
       {
         id: "fq-counterfeit-probe",
@@ -288,6 +377,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 15,
         riskLevel: 3,
         districtId: "fungal-quarter",
+        actionSequence: ["inspection", "paid_intel"],
       },
     ],
   },
@@ -315,6 +405,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 50,
         riskLevel: 3,
         districtId: "festival-sprawl",
+        actionSequence: ["permit_filing", "trade_execution", "logistics"],
       },
       {
         id: "fs-parade-float",
@@ -325,6 +416,7 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 15,
         riskLevel: 4,
         districtId: "festival-sprawl",
+        actionSequence: ["permit_filing", "brand_promotion", "negotiation"],
       },
       {
         id: "fs-rumor-harvest",
@@ -335,10 +427,313 @@ export const INITIAL_DISTRICTS: District[] = [
         baseReward: 5,
         riskLevel: 2,
         districtId: "festival-sprawl",
+        actionSequence: ["paid_intel"],
       },
     ],
   },
 ];
+
+// ═══════════════════════════════════════════════════════════════
+// COUNTERPARTIES — the simulated market services network
+// Each has personality, district presence, and action support.
+// Designed for future Stellar testnet backing (settlementMode).
+// ═══════════════════════════════════════════════════════════════
+
+export const INITIAL_COUNTERPARTIES: Counterparty[] = [
+  {
+    id: "madame-lentil",
+    name: "Madame Lentil's Emporium",
+    type: "merchant",
+    emoji: "🧑‍🍳",
+    description: "The premier spice and luxury goods merchant of the Velvet Steps. Knows the price of everything and the value of even more.",
+    quirk: "Insists on tasting every product personally before agreeing to terms. This takes a while.",
+    reliability: 0.85,
+    greedFactor: 0.3,
+    districtIds: ["velvet-steps", "festival-sprawl"],
+    supportedActions: ["trade_execution", "negotiation"],
+    reputation: 78,
+    settlementMode: "simulated",
+    mood: "cooperative",
+    interactionCount: 0,
+  },
+  {
+    id: "guild-of-ledgers",
+    name: "The Guild of Ledgers",
+    type: "guild_office",
+    emoji: "📜",
+    description: "The bureaucratic heart of bazaar commerce. Issues permits, mediates disputes, and enforces trade regulations with glacial efficiency.",
+    quirk: "Every form requires a form to request the form. They consider this 'streamlined.'",
+    reliability: 0.95,
+    greedFactor: 0.15,
+    districtIds: ["velvet-steps", "fungal-quarter", "festival-sprawl"],
+    supportedActions: ["permit_filing", "negotiation"],
+    reputation: 90,
+    settlementMode: "simulated",
+    mood: "neutral",
+    interactionCount: 0,
+  },
+  {
+    id: "fungal-permits",
+    name: "The Permit Goblins",
+    type: "permit_desk",
+    emoji: "👺",
+    description: "Underground permit processors who operate in the Fungal Quarter. Fast, cheap, and only mildly corrupt.",
+    quirk: "Accept 'expediting fees' in tea tins, stamps, and compliments about their filing system.",
+    reliability: 0.6,
+    greedFactor: 0.45,
+    districtIds: ["fungal-quarter"],
+    supportedActions: ["permit_filing", "inspection"],
+    reputation: 35,
+    settlementMode: "simulated",
+    mood: "chaotic",
+    interactionCount: 0,
+  },
+  {
+    id: "whisper-network",
+    name: "The Whisper Network",
+    type: "rumor_bureau",
+    emoji: "👂",
+    description: "A shadowy collective of gossip brokers, barkeep informants, and crows-for-hire. Sells intel of varying reliability.",
+    quirk: "Their 'premium tier' intel is just regular intel read in a more dramatic whisper.",
+    reliability: 0.55,
+    greedFactor: 0.25,
+    districtIds: ["velvet-steps", "fungal-quarter", "festival-sprawl"],
+    supportedActions: ["paid_intel"],
+    reputation: 50,
+    settlementMode: "simulated",
+    mood: "cooperative",
+    interactionCount: 0,
+  },
+  {
+    id: "cart-and-mule",
+    name: "Cart & Mule Logistics Co.",
+    type: "logistics_broker",
+    emoji: "🐪",
+    description: "The city's most reliable (and only insured) freight operation. Moves goods between districts with reasonable speed.",
+    quirk: "The lead mule, Gerald, has veto power over cargo he finds aesthetically displeasing.",
+    reliability: 0.8,
+    greedFactor: 0.2,
+    districtIds: ["velvet-steps", "fungal-quarter", "festival-sprawl"],
+    supportedActions: ["logistics"],
+    reputation: 65,
+    settlementMode: "simulated",
+    mood: "cooperative",
+    interactionCount: 0,
+  },
+  {
+    id: "magnifying-order",
+    name: "The Magnifying Order",
+    type: "inspector",
+    emoji: "🔍",
+    description: "Independent quality inspectors who certify goods, audit inventories, and occasionally discover that your 'ancient spices' are from last Tuesday.",
+    quirk: "Rate everything on a 47-point scale. Nobody knows why 47.",
+    reliability: 0.9,
+    greedFactor: 0.1,
+    districtIds: ["velvet-steps", "fungal-quarter"],
+    supportedActions: ["inspection"],
+    reputation: 82,
+    settlementMode: "simulated",
+    mood: "neutral",
+    interactionCount: 0,
+  },
+  {
+    id: "crows-analytics",
+    name: "Crows & Associates Data Bureau",
+    type: "data_vendor",
+    emoji: "📊",
+    description: "A data analytics firm run by an improbably literate murder of crows. Tracks market prices, consumer sentiment, and rival brand activity.",
+    quirk: "Reports come in two versions: 'Optimistic' and 'Realistic.' They charge more for Realistic.",
+    reliability: 0.7,
+    greedFactor: 0.35,
+    districtIds: ["velvet-steps", "festival-sprawl"],
+    supportedActions: ["paid_intel", "inspection"],
+    reputation: 60,
+    settlementMode: "simulated",
+    mood: "neutral",
+    interactionCount: 0,
+  },
+  {
+    id: "shadow-desk",
+    name: "The Shadow Desk",
+    type: "rival_handler",
+    emoji: "🕶️",
+    description: "Competitive intelligence specialists. Will investigate rivals, spread counter-narratives, or 'acquire' competitor trade secrets for the right price.",
+    quirk: "Communicates exclusively through notes slid under doors. Even when you're sitting right there.",
+    reliability: 0.5,
+    greedFactor: 0.5,
+    districtIds: ["fungal-quarter", "festival-sprawl"],
+    supportedActions: ["sabotage_op", "paid_intel"],
+    reputation: 25,
+    settlementMode: "simulated",
+    mood: "hostile",
+    interactionCount: 0,
+  },
+  {
+    id: "festival-criers",
+    name: "The Festival Criers Guild",
+    type: "event_promoter",
+    emoji: "📣",
+    description: "Professional attention-getters who run parades, stall promotions, and brand activations at the Festival Sprawl. Volume is their value proposition.",
+    quirk: "Their 'subtle campaign' option is just yelling at 60% volume instead of 100%.",
+    reliability: 0.75,
+    greedFactor: 0.3,
+    districtIds: ["festival-sprawl", "velvet-steps"],
+    supportedActions: ["brand_promotion", "negotiation"],
+    reputation: 55,
+    settlementMode: "simulated",
+    mood: "cooperative",
+    interactionCount: 0,
+  },
+];
+
+// Map action types to human-readable labels and chain-readiness info
+export const ACTION_TYPE_INFO: Record<ActionType, { label: string; emoji: string; chainReady: boolean; description: string }> = {
+  trade_execution: {
+    label: "Trade Execution",
+    emoji: "💱",
+    chainReady: true,
+    description: "Asset exchange between parties. Future: Stellar DEX order or path payment.",
+  },
+  paid_intel: {
+    label: "Paid Intel",
+    emoji: "💡",
+    chainReady: true,
+    description: "Purchase of market intelligence. Future: micropayment via Stellar.",
+  },
+  permit_filing: {
+    label: "Permit Filing",
+    emoji: "📄",
+    chainReady: true,
+    description: "License or permit acquisition. Future: on-chain credential issuance.",
+  },
+  inspection: {
+    label: "Inspection",
+    emoji: "🔎",
+    chainReady: false,
+    description: "Quality or compliance verification. Future: oracle-backed attestation.",
+  },
+  logistics: {
+    label: "Logistics",
+    emoji: "📦",
+    chainReady: true,
+    description: "Goods movement and routing. Future: escrow-backed delivery confirmation.",
+  },
+  brand_promotion: {
+    label: "Brand Promotion",
+    emoji: "🎯",
+    chainReady: false,
+    description: "Marketing and brand visibility actions. Future: on-chain ad-spend tracking.",
+  },
+  negotiation: {
+    label: "Negotiation",
+    emoji: "🤝",
+    chainReady: false,
+    description: "Multi-round haggling sessions. Future: commit-reveal pricing protocol.",
+  },
+  sabotage_op: {
+    label: "Sabotage Op",
+    emoji: "💣",
+    chainReady: false,
+    description: "Covert competitive action. Future: anonymous Stellar payments.",
+  },
+};
+
+// ── Counterparty interaction text templates ───────────────────
+export const COUNTERPARTY_SUCCESS_LINES: Record<CounterpartyType, string[]> = {
+  merchant: [
+    "Haggled successfully — the merchant even smiled (rare)",
+    "Secured a favorable trade. The merchant's assistant looked impressed.",
+    "Closed the deal with a handshake and minimal eye-rolling.",
+  ],
+  guild_office: [
+    "Paperwork approved with only two stamp-related delays.",
+    "The guild clerk found your application 'refreshingly competent.'",
+    "Permit issued. The line behind you erupted in jealous whispers.",
+  ],
+  permit_desk: [
+    "Permit secured after 'voluntary' expediting contribution.",
+    "The goblin clerk processed your form with suspicious speed.",
+    "Permit acquired. Only slightly sticky.",
+  ],
+  rumor_bureau: [
+    "Intel acquired. The source seemed unusually specific this time.",
+    "Paid the informant. They whispered something genuinely useful for once.",
+    "The rumor broker slid the envelope across with a theatrical wink.",
+  ],
+  logistics_broker: [
+    "Goods dispatched via the express mule route. Gerald approved the cargo.",
+    "Shipping arranged. Estimated delivery: before the spices go stale.",
+    "Logistics locked in. Cart & Mule's insurance covers everything except 'acts of parrot.'",
+  ],
+  inspector: [
+    "Inspection passed. Your goods scored 38/47 (that's excellent, apparently).",
+    "The inspector seemed pleased. They made a note in their little book.",
+    "Quality certified. The Magnifying Order's seal will boost credibility.",
+  ],
+  data_vendor: [
+    "Market data received. The 'Realistic' version, as requested.",
+    "Analytics report delivered. The crows outdid themselves.",
+    "Consumer sentiment data acquired. Turns out, people like your brand.",
+  ],
+  rival_handler: [
+    "Operation complete. The Shadow Desk left no traces (probably).",
+    "Intel on the rival acquired. A note was slid under the door as confirmation.",
+    "Competitor data in hand. The less you know about methods, the better.",
+  ],
+  event_promoter: [
+    "Brand activation launched! The Criers hit 90% volume (their 'subtle' mode).",
+    "Promotion deployed. Your brand name echoed through three plazas.",
+    "Campaign running. Early crowd reactions: curious, intrigued, slightly deafened.",
+  ],
+};
+
+export const COUNTERPARTY_FAILURE_LINES: Record<CounterpartyType, string[]> = {
+  merchant: [
+    "The merchant laughed at your offer and sold to someone else.",
+    "Negotiation collapsed after an unfortunate comment about the merchant's inventory.",
+    "Deal fell through. The merchant cited 'vibes' as the reason.",
+  ],
+  guild_office: [
+    "Application denied. Reason: 'Form 7B-Subsection Q was filled in blue, not indigo.'",
+    "The guild office 'lost' your paperwork. Coincidence, surely.",
+    "Permit rejected. The clerk suggested 'trying again with better penmanship.'",
+  ],
+  permit_desk: [
+    "The Permit Goblins rejected your application for 'insufficient enthusiasm.'",
+    "Permit denied. They did keep the expediting fee though.",
+    "Processing failed. The goblin blamed 'the machine' (it's a rubber stamp).",
+  ],
+  rumor_bureau: [
+    "The informant took your money and delivered yesterday's news.",
+    "Intel was... less than actionable. 'Something might happen somewhere' isn't helpful.",
+    "The whisper network sold you a rumor you already knew.",
+  ],
+  logistics_broker: [
+    "Gerald the mule rejected the cargo on aesthetic grounds.",
+    "Shipping delayed. The cart hit a philosophical disagreement at a fork in the road.",
+    "Logistics failed. Cart & Mule cited 'unprecedented mule fatigue.'",
+  ],
+  inspector: [
+    "Inspection failed. Your goods scored 12/47 (that's catastrophic).",
+    "The inspector found 'concerning irregularities' and charged you for the privilege.",
+    "Quality check: not great. The inspector's frown was visible from across the district.",
+  ],
+  data_vendor: [
+    "The analytics report was delivered in a format nobody can read.",
+    "Data was outdated by three market cycles. The crows apologized (they didn't).",
+    "Consumer sentiment data received: it's mostly complaints about your competitor.",
+  ],
+  rival_handler: [
+    "The Shadow Desk's operative was recognized. Cover blown.",
+    "Operation compromised. The rival now knows you're watching.",
+    "The covert mission was... not covert. At all.",
+  ],
+  event_promoter: [
+    "The Criers promoted your COMPETITOR's brand name. By accident. Allegedly.",
+    "Campaign launched but the crowd was elsewhere. Bad timing.",
+    "Promotion backfired. The criers' enthusiasm scared away customers.",
+  ],
+};
 
 // ═══════════════════════════════════════════════════════════════
 // EVENT TEMPLATES — for random events and mission narratives
