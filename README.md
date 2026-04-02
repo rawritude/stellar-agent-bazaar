@@ -110,6 +110,13 @@ Fantasy flea market meets startup dashboard. Polished UI with ridiculous copy. R
 - `shared/` — Shared TypeScript schemas
 - `docs/` — Design documents and concept docs
 
+## Handoff docs
+
+- `docs/HANDOFF.md` — Full current-state handoff for another coding agent
+- `docs/NEXT_STEPS.md` — Prioritized roadmap of what should be built next
+- `docs/WORK_LOG.md` — Summary of what has already been completed
+- `docs/AGENT_BRIEF.md` — Short brief to paste into another coding agent flow
+
 ## Design documents
 
 - `docs/game-concept.md` — Premise, design goals, fantasy pillars
