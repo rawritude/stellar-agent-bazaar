@@ -12,20 +12,12 @@ import {
 // ASCII ART
 // ===============================================================
 
-// Pre-rendered figlet title (Slant font) — looks terminal-native
-const TITLE_FIGLET = `  ________            ____
- /_  __/ /_  ___     / __ )____ _____  ____ _____ ______
-  / / / __ \\/ _ \\   / __  / __ \`/_  / / __ \`/ __ \`/ ___/
- / / / / / /  __/  / /_/ / /_/ / / /_/ /_/ / /_/ / /
-/_/ /_/ /_/\\___/  /_____/\\__,_/ /___/\\__,_/\\__,_/_/`;
-
 export const SPLASH_ART: TerminalLine[] = [
   blank(),
   ...renderBazaarEntrance(),
   blank(),
-  figletBlock(TITLE_FIGLET, "gold", true),
-  blank(),
-  title("The Velvet Ledger", "amber", "0.9em", false),
+  title("The Bazaar", "gold", "2.4em", true),
+  title("The Velvet Ledger", "amber", "1em", false),
   blank(),
   title("Spice lanes · Shady deals · Cosmic ledgers", "dim", "0.85em", false),
   blank(),
