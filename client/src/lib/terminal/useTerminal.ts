@@ -33,17 +33,21 @@ export function useTerminal() {
         case "DISPATCH_MISSION": {
           const p = term.pending;
           if (p.districtId && p.missionId && p.agentId && p.budget && p.riskPosture) {
-            const district = game.districts.find(d => d.id === p.districtId)!;
-            const template = district.availableMissions.find(m => m.id === p.missionId)!;
-            dispatch({
-              type: "DISPATCH_MISSION",
-              template,
-              agentId: p.agentId,
-              districtId: p.districtId,
-              budget: p.budget,
-              riskPosture: p.riskPosture as RiskPosture,
-            });
-            pendingRefresh.current = true;
+            const district = game.districts.find(d => d.id === p.districtId);
+            const template = district?.availableMissions.find(m => m.id === p.missionId);
+            if (district && template) {
+              dispatch({
+                type: "DISPATCH_MISSION",
+                template,
+                agentId: p.agentId,
+                districtId: p.districtId,
+                budget: p.budget,
+                riskPosture: p.riskPosture as RiskPosture,
+              });
+              pendingRefresh.current = true;
+            } else {
+              console.error("[dispatch] District or mission not found:", p.districtId, p.missionId);
+            }
           }
           break;
         }
@@ -53,6 +57,20 @@ export function useTerminal() {
               const { state: resolved } = transition(prev, game, "RESOLVE_COMPLETE");
               return resolved;
             });
+          }).catch(err => {
+            console.error("[resolve] Day resolution failed:", err);
+            // Show error in terminal instead of crashing
+            setTerm(prev => ({
+              ...prev,
+              lines: [
+                { spans: [{ text: "" }], blank: true },
+                { spans: [{ text: "  Resolution failed: " + err.message, color: "red" }] },
+                { spans: [{ text: "  Check browser console for details.", color: "dim" as any }] },
+                { spans: [{ text: "" }], blank: true },
+              ],
+              choices: [{ key: "enter", label: "Return to planning...", action: "BACK" }],
+              screen: "dispatch_more" as any,
+            }));
           });
           break;
         case "ADVANCE_DAY":
