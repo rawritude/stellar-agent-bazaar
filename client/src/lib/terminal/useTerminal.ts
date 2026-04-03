@@ -209,7 +209,7 @@ export function useTerminal() {
       });
       const data = await res.json();
 
-      if (data.agents && data.agents.length >= 3) {
+      if (data.agents && data.agents.length >= 2) {
         // Convert generated agents to full Agent objects with all required fields
         const fullAgents = data.agents.map((a: any, i: number) => ({
           id: `gen-${a.name.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${i}`,

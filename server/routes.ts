@@ -171,8 +171,11 @@ export async function registerRoutes(
       recordSpend(walletAddr, result.tokensUsed.input, result.tokensUsed.output);
 
       const tokenInfo = `${result.tokensUsed.input}+${result.tokensUsed.output} tokens`;
-      log(`Agents generated: ${result.agents.map(a => a.name).join(", ")} (${tokenInfo})`, "ai");
-      res.json({ ...result, budget: getBudgetStatus(walletAddr) });
+      const rarityInfo = result.rarities.join(", ");
+      log(`Agents generated: ${result.agents.map(a => `${a.name} [${a.rarity}]`).join(", ")} (${tokenInfo})`, "ai");
+      log(`Rarity rolls: ${rarityInfo}`, "ai");
+      // Send agents to client (rarity is on each agent, but the internal rolls are not exposed)
+      res.json({ agents: result.agents, budget: getBudgetStatus(walletAddr) });
     } catch (err: any) {
       log(`Agent generation failed: ${err.message}`, "ai");
       res.json({ agents: null, error: err.message });

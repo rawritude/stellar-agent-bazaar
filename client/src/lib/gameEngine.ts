@@ -162,7 +162,7 @@ function findCounterparty(
   );
 
   // Skip counterparties the agent refuses to work with
-  if (agent?.memory.refusals.length) {
+  if (agent?.memory?.refusals?.length) {
     candidates = candidates.filter(c => !agent.memory.refusals.includes(c.id));
   }
 
@@ -548,7 +548,7 @@ export async function resolveDay(state: GameState, adapter?: SettlementAdapter, 
   const resolved: ActiveMission[] = [];
 
   for (const mission of state.activeMissions) {
-    const { result, updatedCounterparties } = await resolveSingleMission(mission, currentCounterparties, state.day, adapter, enableAI, state.brandName, state.activeEvents);
+    const { result, updatedCounterparties } = await resolveSingleMission(mission, currentCounterparties, state.day, adapter, enableAI, state.brandName, state.activeEvents || []);
     currentCounterparties = updatedCounterparties;
     resolved.push({
       ...mission,
@@ -730,7 +730,7 @@ export function advanceDay(state: GameState): GameState {
   }
 
   // 5. Tick existing events (decrease duration)
-  const survivingEvents = tickEvents(state.activeEvents);
+  const survivingEvents = tickEvents(state.activeEvents || []);
   const allEvents = [...survivingEvents, ...rumorEvents];
 
   // 6. Counterparty mood shifts — trust-influenced
@@ -749,10 +749,12 @@ export function advanceDay(state: GameState): GameState {
 
   // 7. Campaign progression
   const week = getCampaignWeek(nextDay);
+  const defaultCampaign = { week: 1 as CampaignWeek, totalDays: 30, rivalReputation: 0, rivalCash: 0, milestones: [], upkeepPerDay: 8, isGameOver: false, hasWon: false };
   const campaign = {
+    ...defaultCampaign,
     ...state.campaign,
     week,
-    upkeepPerDay: 5 + (week - 1) * 2, // Upkeep increases each week
+    upkeepPerDay: 8 + (week - 1) * 2,
   };
 
   // Add rival in week 2
@@ -909,7 +911,9 @@ export function updateAgentOpinion(
   wasWild: boolean,
   day: number,
 ): Agent {
-  const memory = { ...agent.memory, opinions: [...agent.memory.opinions] };
+  const defaultMemory = { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] as string[] };
+  const agentMemory = agent.memory || defaultMemory;
+  const memory = { ...agentMemory, opinions: [...(agentMemory.opinions || [])] };
   const existing = memory.opinions.find(o => o.counterpartyId === counterpartyId);
 
   const trustDelta = success ? 8 : -12;
@@ -979,7 +983,7 @@ export function updateAgentOpinion(
  * Returns the new cash and any consequences.
  */
 export function applyDailyUpkeep(state: GameState): { cash: number; events: string[]; agentsLost: string[] } {
-  const upkeep = state.campaign.upkeepPerDay;
+  const upkeep = state.campaign?.upkeepPerDay ?? 8;
   const events: string[] = [];
   const agentsLost: string[] = [];
 
@@ -1009,7 +1013,7 @@ export function applyDailyUpkeep(state: GameState): { cash: number; events: stri
 // ═══════════════════════════════════════════════════════════════
 
 import type { ActiveEvent, EventEffect, CampaignWeek } from "./gameData";
-import { pickRandomEvent } from "../lib/events/randomEvents";
+import { pickRandomEvent } from "./events/randomEvents";
 
 /** Rumor-to-event conversion table */
 const RUMOR_EVENTS: Record<string, () => ActiveEvent | null> = {
@@ -1062,7 +1066,7 @@ export function processRumorEvents(state: GameState): ActiveEvent[] {
 
   for (const rumor of state.rumors) {
     const eventFactory = RUMOR_EVENTS[rumor];
-    if (eventFactory && !state.activeEvents.some(e => e.sourceRumor === rumor)) {
+    if (eventFactory && !(state.activeEvents || []).some(e => e.sourceRumor === rumor)) {
       // 30% chance each day that a matching rumor triggers its event
       if (roll(0.3)) {
         const event = eventFactory();
@@ -1102,7 +1106,7 @@ export function getCampaignWeek(day: number): CampaignWeek {
  */
 export function getCampaignEvent(day: number, state: GameState): ActiveEvent | null {
   // Week 2, Day 8: Rival brand arrives
-  if (day === 8 && !state.campaign.rivalBrand) {
+  if (day === 8 && !state.campaign?.rivalBrand) {
     return {
       id: "campaign-rival-arrives",
       name: "A Rival Approaches",

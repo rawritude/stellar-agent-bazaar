@@ -9,32 +9,35 @@ import { getReputationTier, getCashTier } from "../gameEngine";
 
 export const SPLASH_ART: TerminalLine[] = [
   blank(),
-  line(span("                         .", "dim")),
-  line(span("                        /|\\", "gold")),
-  line(span("                       / | \\", "gold")),
-  line(span("                  ____/  |  \\____", "gold")),
-  line(span("                 /    \\  |  /    \\", "gold")),
-  line(span("                /      \\_|_/      \\", "gold")),
-  line(span("    ___________/   .    |||    .   \\___________", "gold")),
-  line(span("   /           |  /|\\   |||   /|\\  |           \\", "amber")),
-  line(span("  /            | / | \\  |||  / | \\ |            \\", "amber")),
-  line(span(" /  __    __   |/  |  \\.|.|./  |  \\|   __    __  \\", "amber")),
-  line(span(" | |  |  |  |  |   |   |||||   |   |  |  |  |  | |", "amber")),
-  line(span(" | |__|  |__|  |   |   |||||   |   |  |__|  |__| |", "amber")),
-  line(span(" |  []    []   | .':'. |||||.':'. |   []    []  |", "amber")),
-  line(span(" |_____||_____|/_______|||||||_______\\|_____||_____|", "gold")),
-  line(span(" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^", "dim")),
+  line(span("                   .     *    .        *   .    *", "dim")),
+  line(span("            *   .     .     *      .        .      *", "dim")),
+  line(span("         .       *        .    *       .  *     .", "dim")),
+  line(span("                          ___/\\___ ", "gold")),
+  line(span("                    _.--'\"         \"'--._ ", "gold")),
+  line(span("                  .'    *    |||    *    '. ", "gold")),
+  line(span("                 /    .      |||      .    \\ ", "gold")),
+  line(span("            ____/            |||            \\____ ", "gold")),
+  line(span("           /    \\    /\\      |||      /\\    /    \\ ", "amber")),
+  line(span("          /      \\  /  \\  .--|||--. /   \\ /      \\ ", "amber")),
+  line(span("    _____/   /\\   \\/    \\/    |    \\/    \\/   /\\   \\_____ ", "amber")),
+  line(span("   |     |  /  \\  |  []  |   |   |  []  |  /  \\  |     | ", "amber")),
+  line(span("   |  [] | /    \\ |      |  /|\\  |      | /    \\ | []  | ", "amber")),
+  line(span("   |     |/ .  . \\|  ..  | / | \\ |  ..  |/ .  . \\|     | ", "amber")),
+  line(span("   | .-. ||  ||  ||  ||  |/  |  \\|  ||  ||  ||  || .-. | ", "gold")),
+  line(span("   | | | ||  ||  ||  ||  |   |   |  ||  ||  ||  || | | | ", "gold")),
+  line(span("   |_|_|_||__||__||__||__|___|___|__||__||__||__|_|_|_| ", "gold")),
+  line(span("   |_____|[__][__][______]|_____||[______][__][__|_____| ", "gold")),
+  line(span("    ^^^  ^^  ^^  ^^  ^^  ^^  ^^  ^^  ^^  ^^  ^^  ^^^  ", "dim")),
+  line(span("   ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~ ", "dim")),
   blank(),
-  line(
-    span("          T H E   V E L V E T   L E D G E R", "gold", true),
-  ),
-  line(
-    span("                    B A Z A A R", "gold", true),
-  ),
+  line(span("         T H E    V E L V E T    L E D G E R", "gold", true)),
+  line(span("                   B A Z A A R", "gold", true)),
   blank(),
-  line(span("     ~*~  A Terminal Trading Game  ~*~", "amber")),
-  line(span("         Spice lanes. Shady deals.", "dim")),
-  line(span("         Agents in tiny waistcoats.", "dim")),
+  line(span("          ~*~ A Terminal Trading Game ~*~", "amber")),
+  blank(),
+  line(span("       Spice lanes. Shady deals. Cosmic ledgers.", "dim")),
+  line(span("    Agents in tiny waistcoats. Merchants with grudges.", "dim")),
+  line(span("       Where every receipt tells a story.", "dim")),
   blank(),
 ];
 
@@ -51,14 +54,28 @@ export const THIN_DIVIDER: TerminalLine[] = [
 ];
 
 const HAKIM_PORTRAIT: TerminalLine[] = [
-  line(span("      _____", "amber")),
-  line(span("     /     \\", "amber")),
-  line(span("    | o   o |", "amber")),
-  line(span("    |   >   |", "amber")),
-  line(span("    |  \\_/  |", "amber")),
-  line(span("   _|  |||  |_", "amber")),
-  line(span("  /  \\_____/  \\", "amber")),
-  line(span("  \\___________/  Hakim", "amber"), span(" the Ledger-Keeper", "gold")),
+  line(span("                   . * . * .", "dim")),
+  line(span("                *  .  *  .  *", "dim")),
+  line(span("               .  _________  .", "amber")),
+  line(span("              *  /  _   _  \\  *", "amber")),
+  line(span("               . | |_| |_| | .", "amber")),
+  line(span("                 |    >    |", "amber")),
+  line(span("                 |  \\___/  |", "amber")),
+  line(span("              ___|_________|___", "gold")),
+  line(span("             /     |     |     \\", "gold")),
+  line(span("            /  ~~~~|~~~~~|~~~~  \\", "gold")),
+  line(span("           /   ~~~ \\   / ~~~    \\", "gold")),
+  line(span("          /    ~~~  \\ /  ~~~     \\", "gold")),
+  line(span("         /     ~~~  |   ~~~      \\", "gold")),
+  line(span("        (      ~~~~ | ~~~~        )", "amber")),
+  line(span("         \\     ~~~ ~~~ ~~~      /", "amber")),
+  line(span("          `-.___~~~~~~~~~~~~___.-'", "amber")),
+  line(span("                ~~~~~~~~~~~~~", "dim")),
+  blank(),
+  line(span("           H A K I M", "gold", true)),
+  line(span("        the Ledger-Keeper", "amber")),
+  line(span("    Keeper of Receipts. Counter of Coins.", "dim")),
+  line(span("    Witness to Every Deal in the Bazaar.", "dim")),
 ];
 
 const AGENT_ART: Record<string, TerminalLine[]> = {
@@ -140,10 +157,77 @@ const FAILURE_ART: TerminalLine[] = [
 ];
 
 const RESOLVING_ART: TerminalLine[] = [
-  line(span("      ___", "amber")),
-  line(span("     /   \\", "amber")),
-  line(span("    | >>> |  Your agents venture into the bazaar...", "amber")),
-  line(span("     \\___/", "amber")),
+  blank(),
+  line(span("           .   *   .   *   .", "dim")),
+  line(span("        *       .       *", "dim")),
+  line(span("           ___|___|___", "amber")),
+  line(span("          /    |||    \\", "amber")),
+  line(span("         /     |||     \\", "amber")),
+  line(span("        |   >>> | >>>   |", "gold")),
+  line(span("         \\     |||     /", "amber")),
+  line(span("          \\____|___|__/", "amber")),
+  line(span("               |||", "dim")),
+  line(span("           ~~~~|||~~~~", "dim")),
+  blank(),
+  line(span("     Your agents venture into the bazaar...", "gold")),
+  blank(),
+];
+
+// ── SETUP / ONBOARDING ART ──────────────────────────────────
+
+const WALLET_ART: TerminalLine[] = [
+  blank(),
+  line(span("            .  *  .  *  .  *  .", "dim")),
+  line(span("         *    .    *    .    *", "dim")),
+  line(span("           _______________", "teal")),
+  line(span("          /               \\", "teal")),
+  line(span("         |  .---.  .---.  |", "teal")),
+  line(span("         | | * | | | * | |", "teal")),
+  line(span("         |  '---'  '---'  |", "teal")),
+  line(span("         |    ___===___    |", "teal")),
+  line(span("         |   |  SEAL  |   |", "gold")),
+  line(span("         |   |_______|   |", "gold")),
+  line(span("          \\_____________/", "teal")),
+  line(span("              |     |", "dim")),
+  line(span("         ~~~~~|~~~~~|~~~~~", "dim")),
+  blank(),
+  line(span("      T H E   C O S M I C   L E D G E R", "teal", true)),
+  blank(),
+];
+
+const BRAND_NAMING_ART: TerminalLine[] = [
+  blank(),
+  line(span("           _________________", "gold")),
+  line(span("          /                 \\", "gold")),
+  line(span("         |   .-.     .-.    |", "gold")),
+  line(span("         |  ( Q )   ( Q )   |", "gold")),
+  line(span("         |   '-'     '-'    |", "gold")),
+  line(span("         |                  |", "amber")),
+  line(span("         |   ____________   |", "amber")),
+  line(span("         |  |            |  |", "amber")),
+  line(span("         |  | YOUR NAME  |  |", "gold", true)),
+  line(span("         |  | HERE       |  |", "gold")),
+  line(span("         |  |____________|  |", "amber")),
+  line(span("          \\________________/", "gold")),
+  blank(),
+  line(span("      The Ledger Awaits Your Mark", "amber")),
+  blank(),
+];
+
+const CREW_ASSEMBLING_ART: TerminalLine[] = [
+  blank(),
+  line(span("        .  *  .     .  *  .     .  *  .", "dim")),
+  line(span("     *     .    *      .    *      .    *", "dim")),
+  line(span("         _____     _____     _____", "amber")),
+  line(span("        / . . \\   / . . \\   / . . \\", "amber")),
+  line(span("       | (   ) | | (   ) | | (   ) |", "amber")),
+  line(span("        \\_____/   \\_____/   \\_____/", "amber")),
+  line(span("          |||       |||       |||", "dim")),
+  line(span("         /|||\\     /|||\\     /|||\\", "dim")),
+  line(span("        / ||| \\   / ||| \\   / ||| \\", "dim")),
+  blank(),
+  line(span("        Your crew is assembling...", "gold")),
+  blank(),
 ];
 
 // ── WIN / LOSE / EVENT ART ──────────────────────────────────
@@ -337,6 +421,8 @@ export function hakimIntro(): TerminalLine[] {
 
 export function hakimNamePrompt(): TerminalLine[] {
   return [
+    ...BRAND_NAMING_ART,
+    blank(),
     line(span("  \"Every great bazaar enterprise needs a name.", "gold")),
     line(span("   Something that will echo through the market halls.", "gold")),
     line(span("   Something that will look splendid on a receipt.\"", "gold")),
@@ -344,6 +430,10 @@ export function hakimNamePrompt(): TerminalLine[] {
     line(span("  What shall your trading brand be called?", "white", true)),
     blank(),
   ];
+}
+
+export function getCrewAssemblingArt(): TerminalLine[] {
+  return [...CREW_ASSEMBLING_ART];
 }
 
 export function hakimNameResponse(name: string): TerminalLine[] {
@@ -378,7 +468,7 @@ export function hakimAgentIntro(agent: Agent, idx: number, total: number): Termi
     Math.abs(agent.scoutBonus),
     Math.abs(agent.charmBonus),
   );
-  const rarity = maxStat >= 28 ? { label: "LEGENDARY", color: "purple" as const }
+  const rarity = maxStat >= 27 ? { label: "LEGENDARY", color: "purple" as const }
     : maxStat >= 22 ? { label: "RARE", color: "gold" as const }
     : maxStat >= 15 ? { label: "UNCOMMON", color: "teal" as const }
     : { label: "COMMON", color: "dim" as const };
@@ -1111,7 +1201,7 @@ export function hakimWalletRequired(): TerminalLine[] {
   return [
     ...ORNAMENTAL_DIVIDER,
     blank(),
-    ...STELLAR_ART,
+    ...WALLET_ART,
     blank(),
     line(span("  \"Before we go any further, you need to prove", "gold")),
     line(span("   who you are. The bazaar has rules.", "gold")),

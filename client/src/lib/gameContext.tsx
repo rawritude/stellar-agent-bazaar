@@ -104,7 +104,7 @@ function gameReducer(state: GameState, action: GameAction): GameState {
         agents,
         campaign: upkeepMod ? {
           ...state.campaign,
-          upkeepPerDay: state.campaign.upkeepPerDay + upkeepMod,
+          upkeepPerDay: (state.campaign?.upkeepPerDay ?? 8) + upkeepMod,
         } : state.campaign,
       };
     }

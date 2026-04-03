@@ -90,7 +90,7 @@ export function transition(
         if (!name || name.length > 30) break;
         const response = Text.hakimNameResponse(name);
         const generatingLines = [
-          blank(),
+          ...Text.getCrewAssemblingArt(),
           line(span("  Hakim consults the ledger...", "dim")),
           line(span("  The bazaar is assembling your crew...", "teal")),
           blank(),

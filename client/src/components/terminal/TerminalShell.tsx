@@ -450,7 +450,7 @@ export function TerminalShell() {
         // Find where the agent name line was appended (near the end of current lines)
         const nameLineIdx = Math.max(0, lineCount - 15); // agent intro is ~15 lines
 
-        if (maxStat >= 28) {
+        if (maxStat >= 27) {
           // LEGENDARY — rainbow shimmer + sparkle
           animManager.add({
             id: "agent-rarity",
