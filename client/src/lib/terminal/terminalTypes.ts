@@ -23,6 +23,7 @@ export interface TerminalLine {
   spans: TerminalSpan[];
   indent?: number;
   blank?: boolean;
+  centered?: boolean;
   // CSS-rendered elements (bypass character rendering)
   cssTitle?: { text: string; color: TerminalColor; size?: string; glow?: boolean };
   cssDivider?: { color: TerminalColor; style?: "solid" | "dashed" | "dotted" };

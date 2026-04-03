@@ -18,8 +18,8 @@ export const SPLASH_ART: TerminalLine[] = [
   blank(),
   title("The Velvet Ledger Bazaar", "gold", "1.8em", true),
   blank(),
-  line(span("             Spice lanes. Shady deals. Cosmic ledgers.", "dim")),
-  line(span("          Agents in tiny waistcoats. Merchants with grudges.", "dim")),
+  title("Spice lanes. Shady deals. Cosmic ledgers.", "dim", "0.9em", false),
+  title("Agents in tiny waistcoats. Merchants with grudges.", "dim", "0.85em", false),
   blank(),
 ];
 

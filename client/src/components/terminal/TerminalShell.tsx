@@ -67,7 +67,10 @@ function TerminalLineView({
   let charOffset = 0;
 
   return (
-    <div style={{ paddingLeft: line.indent ? `${line.indent * 0.6}em` : undefined }}>
+    <div style={{
+      paddingLeft: line.indent ? `${line.indent * 0.6}em` : undefined,
+      textAlign: line.centered ? "center" : undefined,
+    }}>
       {spinner && (
         <span style={{ color: TERMINAL_COLORS.amber, marginRight: "0.5em" }}>
           {spinner}

@@ -40,11 +40,12 @@ function pixelsToLines(
   pixels: boolean[][],
   color: TerminalColor = "gold",
   indent: number = 4,
+  centered: boolean = false,
 ): TerminalLine[] {
   const height = pixels.length;
   const width = pixels[0]?.length ?? 0;
   const lines: TerminalLine[] = [];
-  const pad = " ".repeat(indent);
+  const pad = centered ? "" : " ".repeat(indent);
 
   for (let row = 0; row < height; row += 4) {
     let str = pad;
@@ -61,7 +62,9 @@ function pixelsToLines(
       ];
       str += toBraille(dots);
     }
-    lines.push(line(span(str, color)));
+    const l = line(span(str, color));
+    if (centered) l.centered = true;
+    lines.push(l);
   }
 
   return lines;
@@ -488,8 +491,9 @@ export function renderBazaarEntrance(): TerminalLine[] {
   drawLine(px, 128, 62, 128, 68);
   drawLine(px, 126, 64, 130, 64);
 
-  return pixelsToLines(px, "gold", 0);
+  return pixelsToLines(px, "gold", 0, true);
 }
+
 
 /**
  * A trophy/chalice for the championship win.
@@ -617,7 +621,7 @@ export function renderDjinn(): TerminalLine[] {
   drawDot(px, 54, 48);
   drawDot(px, 66, 48);
 
-  return pixelsToLines(px, "amber", 0);
+  return pixelsToLines(px, "amber", 0, true);
 }
 
 /**
@@ -655,4 +659,539 @@ export function renderLedger(): TerminalLine[] {
   stars.forEach(([x, y]) => drawDot(px, x, y));
 
   return pixelsToLines(px, "gold", 4);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPANDED ASSET LIBRARY
+// Organized by category. All at 100-160px wide for proper detail.
+// ═══════════════════════════════════════════════════════════════
+
+// ── CHARACTERS ──────────────────────────────────────────────
+
+/** Rival brand leader — cloaked figure with banner */
+export function renderRival(): TerminalLine[] {
+  const w = 100, h = 48;
+  const px = createCanvas(w, h);
+  // Banner
+  drawRect(px, 60, 4, 30, 20);
+  drawLine(px, 75, 0, 75, 4);
+  // Banner emblem
+  drawStar(px, 75, 14, 6);
+  // Figure (cloaked, imposing)
+  drawCircle(px, 35, 10, 7);
+  drawLine(px, 28, 14, 20, 40);
+  drawLine(px, 42, 14, 50, 40);
+  drawLine(px, 20, 40, 50, 40);
+  // Eyes (menacing)
+  drawDot(px, 32, 9);
+  drawDot(px, 38, 9);
+  // Arms crossed
+  drawLine(px, 24, 22, 35, 28);
+  drawLine(px, 46, 22, 35, 28);
+  // Ground
+  drawLine(px, 5, 44, 95, 44);
+  // Stars
+  [[8, 2], [92, 3], [15, 5], [85, 1]].forEach(([x, y]) => drawDot(px, x, y));
+  return pixelsToLines(px, "purple", 2);
+}
+
+/** Merchant/shopkeeper behind a counter */
+export function renderMerchant(): TerminalLine[] {
+  const w = 100, h = 40;
+  const px = createCanvas(w, h);
+  // Counter
+  drawRect(px, 15, 24, 70, 6);
+  drawLine(px, 15, 27, 85, 27);
+  // Goods on counter
+  drawCircle(px, 30, 22, 3);
+  drawCircle(px, 45, 21, 4);
+  drawRect(px, 58, 20, 8, 4);
+  drawRect(px, 70, 19, 6, 5);
+  // Merchant figure
+  drawCircle(px, 50, 10, 6);
+  drawLine(px, 44, 14, 44, 24);
+  drawLine(px, 56, 14, 56, 24);
+  // Hat/turban
+  drawArc(px, 50, 6, 8, Math.PI, Math.PI * 2);
+  // Arms
+  drawLine(px, 44, 18, 35, 22);
+  drawLine(px, 56, 18, 65, 22);
+  // Shelves behind
+  drawLine(px, 20, 12, 80, 12);
+  drawRect(px, 25, 8, 6, 4);
+  drawRect(px, 40, 8, 6, 4);
+  drawCircle(px, 65, 10, 3);
+  drawCircle(px, 75, 10, 2);
+  // Ground
+  drawLine(px, 5, 36, 95, 36);
+  return pixelsToLines(px, "gold", 2);
+}
+
+/** Tax collector — stern figure with scroll */
+export function renderTaxCollector(): TerminalLine[] {
+  const w = 80, h = 40;
+  const px = createCanvas(w, h);
+  // Figure
+  drawCircle(px, 40, 8, 6);
+  drawRect(px, 34, 14, 12, 20);
+  // Stern face
+  drawDot(px, 37, 7);
+  drawDot(px, 43, 7);
+  drawLine(px, 37, 10, 43, 10);
+  // Scroll in hand
+  drawRect(px, 52, 16, 20, 14);
+  drawCircle(px, 52, 16, 2);
+  drawCircle(px, 52, 30, 2);
+  drawCircle(px, 72, 16, 2);
+  drawCircle(px, 72, 30, 2);
+  // Text lines on scroll
+  for (let i = 0; i < 4; i++) drawLine(px, 55, 19 + i * 3, 69, 19 + i * 3);
+  // Hat (official)
+  drawRect(px, 33, 2, 14, 4);
+  drawLine(px, 30, 6, 50, 6);
+  // Ground
+  drawLine(px, 10, 38, 70, 38);
+  return pixelsToLines(px, "orange", 4);
+}
+
+// ── LOCATIONS ───────────────────────────────────────────────
+
+/** Dark alley — narrow passage between buildings */
+export function renderAlley(): TerminalLine[] {
+  const w = 100, h = 48;
+  const px = createCanvas(w, h);
+  // Left wall
+  drawLine(px, 20, 0, 30, 46);
+  drawLine(px, 22, 0, 32, 46);
+  // Right wall
+  drawLine(px, 80, 0, 70, 46);
+  drawLine(px, 78, 0, 68, 46);
+  // Windows (left)
+  drawRect(px, 24, 8, 4, 6);
+  drawRect(px, 26, 20, 4, 6);
+  // Windows (right) — lit
+  drawRect(px, 72, 10, 4, 6);
+  drawDot(px, 74, 13);
+  // Lantern
+  drawLine(px, 50, 4, 50, 8);
+  drawCircle(px, 50, 10, 3);
+  drawDot(px, 50, 10);
+  // Cobblestones
+  for (let x = 32; x < 68; x += 6) {
+    drawDot(px, x, 44);
+    drawDot(px, x + 3, 46);
+  }
+  // Shadows
+  drawLine(px, 35, 46, 25, 46);
+  drawLine(px, 65, 46, 75, 46);
+  // Cat silhouette
+  drawCircle(px, 60, 40, 2);
+  drawLine(px, 60, 42, 60, 44);
+  drawLine(px, 58, 38, 56, 36);
+  drawLine(px, 62, 38, 64, 36);
+  return pixelsToLines(px, "purple", 2);
+}
+
+/** Desert horizon with sun/moon */
+export function renderDesertSunrise(): TerminalLine[] {
+  const w = 140, h = 32;
+  const px = createCanvas(w, h);
+  // Sun
+  drawCircle(px, 70, 8, 8);
+  // Rays
+  for (let angle = 0; angle < Math.PI; angle += Math.PI / 8) {
+    const x1 = Math.round(70 + Math.cos(angle) * 12);
+    const y1 = Math.round(8 - Math.sin(angle) * 8);
+    const x2 = Math.round(70 + Math.cos(angle) * 18);
+    const y2 = Math.round(8 - Math.sin(angle) * 12);
+    drawLine(px, x1, y1, x2, y2);
+  }
+  // Horizon
+  drawLine(px, 0, 20, 140, 20);
+  // Dunes
+  drawArc(px, 30, 22, 20, Math.PI, Math.PI * 2);
+  drawArc(px, 80, 24, 25, Math.PI, Math.PI * 2);
+  drawArc(px, 120, 22, 15, Math.PI, Math.PI * 2);
+  // Distant buildings
+  drawRect(px, 55, 14, 4, 6);
+  drawRect(px, 62, 12, 3, 8);
+  drawArc(px, 58, 12, 4, Math.PI, Math.PI * 2);
+  // Birds
+  drawArc(px, 25, 6, 3, Math.PI, Math.PI * 2);
+  drawArc(px, 35, 4, 3, Math.PI, Math.PI * 2);
+  // Stars fading
+  [[10, 2], [130, 1], [100, 3], [15, 5]].forEach(([x, y]) => drawDot(px, x, y));
+  return pixelsToLines(px, "amber", 0);
+}
+
+/** Moonlit night scene */
+export function renderMoonlitNight(): TerminalLine[] {
+  const w = 140, h = 32;
+  const px = createCanvas(w, h);
+  // Moon (crescent)
+  drawArc(px, 110, 6, 6, Math.PI * 0.2, Math.PI * 1.8);
+  drawArc(px, 112, 6, 5, Math.PI * 0.2, Math.PI * 1.5);
+  // Stars
+  const stars = [[10, 2], [30, 4], [50, 1], [70, 3], [90, 2], [20, 6],
+    [60, 5], [80, 1], [100, 4], [130, 3], [40, 2], [120, 5],
+    [15, 8], [45, 7], [75, 6], [105, 8], [135, 2]];
+  stars.forEach(([x, y]) => drawDot(px, x, y));
+  // Rooftops
+  drawLine(px, 0, 20, 140, 20);
+  drawRect(px, 10, 14, 20, 6);
+  drawArc(px, 20, 14, 10, Math.PI, Math.PI * 2);
+  drawRect(px, 45, 16, 15, 4);
+  drawRect(px, 75, 12, 25, 8);
+  drawArc(px, 87, 12, 12, Math.PI, Math.PI * 2);
+  drawRect(px, 110, 15, 20, 5);
+  // Lit windows
+  drawDot(px, 18, 17);
+  drawDot(px, 22, 17);
+  drawDot(px, 82, 16);
+  drawDot(px, 90, 16);
+  drawDot(px, 118, 18);
+  // Ground
+  drawLine(px, 0, 28, 140, 28);
+  return pixelsToLines(px, "teal", 0);
+}
+
+// ── OBJECTS ──────────────────────────────────────────────────
+
+/** Coin pile (for profit moments) */
+export function renderCoinPile(): TerminalLine[] {
+  const w = 80, h = 32;
+  const px = createCanvas(w, h);
+  // Bottom layer
+  for (let i = 0; i < 8; i++) drawCircle(px, 15 + i * 7, 26, 4);
+  // Middle layer
+  for (let i = 0; i < 6; i++) drawCircle(px, 19 + i * 7, 20, 4);
+  // Top layer
+  for (let i = 0; i < 4; i++) drawCircle(px, 23 + i * 7, 14, 4);
+  // Crown coin
+  drawCircle(px, 40, 8, 5);
+  drawStar(px, 40, 8, 3);
+  // Sparkles
+  [[10, 4], [70, 6], [5, 14], [75, 12], [40, 2]].forEach(([x, y]) => drawDot(px, x, y));
+  return pixelsToLines(px, "gold", 4);
+}
+
+/** Broken coin (for loss moments) */
+export function renderBrokenCoin(): TerminalLine[] {
+  const w = 60, h = 24;
+  const px = createCanvas(w, h);
+  // Coin outline (broken in half)
+  drawArc(px, 25, 12, 10, Math.PI * 0.1, Math.PI);
+  drawArc(px, 35, 12, 10, 0, Math.PI * 0.9);
+  // Crack line
+  drawLine(px, 28, 2, 32, 22);
+  drawLine(px, 29, 8, 33, 6);
+  drawLine(px, 27, 16, 31, 18);
+  // Fragment pieces
+  drawDot(px, 15, 18);
+  drawDot(px, 45, 16);
+  drawDot(px, 12, 20);
+  return pixelsToLines(px, "red", 6);
+}
+
+/** Potion/flask (for items/boosts) */
+export function renderPotion(): TerminalLine[] {
+  const w = 40, h = 32;
+  const px = createCanvas(w, h);
+  // Neck
+  drawRect(px, 17, 4, 6, 8);
+  // Cork
+  drawRect(px, 16, 2, 8, 3);
+  // Body (round bottom)
+  drawArc(px, 20, 18, 12, 0, Math.PI);
+  drawLine(px, 8, 18, 17, 12);
+  drawLine(px, 32, 18, 23, 12);
+  // Liquid level
+  drawLine(px, 10, 20, 30, 20);
+  // Bubbles
+  drawCircle(px, 16, 22, 1);
+  drawCircle(px, 22, 24, 1);
+  drawDot(px, 18, 20);
+  // Sparkle
+  drawDot(px, 20, 0);
+  return pixelsToLines(px, "green", 10);
+}
+
+/** Scroll (for intel/permits) */
+export function renderScroll(): TerminalLine[] {
+  const w = 80, h = 28;
+  const px = createCanvas(w, h);
+  // Top roller
+  drawCircle(px, 10, 4, 4);
+  drawCircle(px, 70, 4, 4);
+  drawLine(px, 10, 4, 70, 4);
+  // Bottom roller
+  drawCircle(px, 10, 24, 4);
+  drawCircle(px, 70, 24, 4);
+  drawLine(px, 10, 24, 70, 24);
+  // Parchment
+  drawLine(px, 14, 4, 14, 24);
+  drawLine(px, 66, 4, 66, 24);
+  // Text lines
+  for (let i = 0; i < 6; i++) drawLine(px, 18, 8 + i * 2, 62, 8 + i * 2);
+  // Seal
+  drawCircle(px, 40, 20, 3);
+  drawDot(px, 40, 20);
+  return pixelsToLines(px, "amber", 4);
+}
+
+/** Key (for locked/unlocked content) */
+export function renderKey(): TerminalLine[] {
+  const w = 50, h = 20;
+  const px = createCanvas(w, h);
+  // Handle (ring)
+  drawCircle(px, 15, 10, 6);
+  // Shaft
+  drawLine(px, 21, 10, 42, 10);
+  drawLine(px, 21, 12, 42, 12);
+  // Teeth
+  drawLine(px, 36, 12, 36, 16);
+  drawLine(px, 40, 12, 40, 16);
+  drawLine(px, 44, 12, 44, 14);
+  return pixelsToLines(px, "gold", 8);
+}
+
+/** Compass (for navigation/scouting) */
+export function renderCompass(): TerminalLine[] {
+  const w = 60, h = 32;
+  const px = createCanvas(w, h);
+  // Outer ring
+  drawCircle(px, 30, 16, 14);
+  // Inner ring
+  drawCircle(px, 30, 16, 10);
+  // Cardinal points
+  drawLine(px, 30, 2, 30, 6); // N
+  drawLine(px, 30, 26, 30, 30); // S
+  drawLine(px, 16, 16, 20, 16); // W
+  drawLine(px, 40, 16, 44, 16); // E
+  // Needle
+  drawLine(px, 30, 6, 26, 16);
+  drawLine(px, 30, 6, 34, 16);
+  drawLine(px, 30, 26, 26, 16);
+  drawLine(px, 30, 26, 34, 16);
+  // N marker
+  drawDot(px, 29, 3);
+  drawDot(px, 31, 3);
+  return pixelsToLines(px, "teal", 6);
+}
+
+// ── WEATHER / ATMOSPHERE ────────────────────────────────────
+
+/** Storm clouds */
+export function renderStorm(): TerminalLine[] {
+  const w = 120, h = 32;
+  const px = createCanvas(w, h);
+  // Cloud 1
+  drawArc(px, 30, 8, 12, Math.PI, Math.PI * 2);
+  drawArc(px, 20, 10, 8, Math.PI, Math.PI * 2);
+  drawArc(px, 42, 10, 10, Math.PI, Math.PI * 2);
+  drawLine(px, 12, 10, 52, 10);
+  // Cloud 2
+  drawArc(px, 80, 6, 14, Math.PI, Math.PI * 2);
+  drawArc(px, 68, 8, 10, Math.PI, Math.PI * 2);
+  drawArc(px, 94, 8, 8, Math.PI, Math.PI * 2);
+  drawLine(px, 58, 8, 102, 8);
+  // Lightning bolt
+  drawLine(px, 50, 12, 45, 18);
+  drawLine(px, 45, 18, 52, 18);
+  drawLine(px, 52, 18, 44, 28);
+  // Rain
+  for (let i = 0; i < 15; i++) {
+    const x = 10 + i * 7 + (i % 2) * 3;
+    const y = 16 + (i % 3) * 4;
+    drawLine(px, x, y, x - 2, y + 4);
+  }
+  return pixelsToLines(px, "dim", 0);
+}
+
+/** Fire/flames (for destruction, urgency) */
+export function renderFlames(): TerminalLine[] {
+  const w = 100, h = 32;
+  const px = createCanvas(w, h);
+  // Flame tongues
+  drawArc(px, 30, 8, 8, Math.PI * 1.2, Math.PI * 1.8);
+  drawArc(px, 50, 4, 10, Math.PI * 1.1, Math.PI * 1.9);
+  drawArc(px, 70, 6, 8, Math.PI * 1.2, Math.PI * 1.8);
+  drawArc(px, 40, 12, 6, Math.PI * 1.3, Math.PI * 1.7);
+  drawArc(px, 60, 10, 7, Math.PI * 1.2, Math.PI * 1.8);
+  // Base fire
+  drawArc(px, 50, 24, 30, Math.PI, Math.PI * 2);
+  drawLine(px, 20, 24, 80, 24);
+  // Embers (floating dots)
+  [[15, 10], [85, 8], [25, 4], [75, 2], [50, 0], [35, 6], [65, 4]].forEach(([x, y]) => drawDot(px, x, y));
+  // Ground
+  drawLine(px, 10, 28, 90, 28);
+  return pixelsToLines(px, "red", 2);
+}
+
+// ── SYMBOLS / ICONS ─────────────────────────────────────────
+
+/** Scales of justice (for fairness, trade balance) */
+export function renderScales(): TerminalLine[] {
+  const w = 80, h = 32;
+  const px = createCanvas(w, h);
+  // Central pillar
+  drawLine(px, 40, 4, 40, 28);
+  drawLine(px, 38, 28, 42, 28);
+  drawLine(px, 36, 30, 44, 30);
+  // Beam
+  drawLine(px, 12, 10, 68, 10);
+  // Fulcrum
+  drawLine(px, 38, 4, 40, 2);
+  drawLine(px, 42, 4, 40, 2);
+  // Left pan (higher - lighter)
+  drawLine(px, 12, 10, 8, 18);
+  drawLine(px, 12, 10, 16, 18);
+  drawArc(px, 12, 18, 4, 0, Math.PI);
+  // Right pan (lower - heavier)
+  drawLine(px, 68, 10, 64, 22);
+  drawLine(px, 68, 10, 72, 22);
+  drawArc(px, 68, 22, 4, 0, Math.PI);
+  // Coins on right pan
+  drawCircle(px, 66, 21, 2);
+  drawCircle(px, 70, 21, 2);
+  return pixelsToLines(px, "gold", 4);
+}
+
+/** Shield (for protection, trust) */
+export function renderShield(): TerminalLine[] {
+  const w = 50, h = 36;
+  const px = createCanvas(w, h);
+  // Shield outline
+  drawArc(px, 25, 4, 16, Math.PI, Math.PI * 2);
+  drawLine(px, 9, 4, 9, 20);
+  drawLine(px, 41, 4, 41, 20);
+  drawLine(px, 9, 20, 25, 32);
+  drawLine(px, 41, 20, 25, 32);
+  // Inner decoration
+  drawStar(px, 25, 14, 6);
+  // Cross bar
+  drawLine(px, 14, 12, 36, 12);
+  return pixelsToLines(px, "green", 8);
+}
+
+/** Hourglass (for time pressure) */
+export function renderHourglass(): TerminalLine[] {
+  const w = 50, h = 36;
+  const px = createCanvas(w, h);
+  // Top frame
+  drawLine(px, 12, 4, 38, 4);
+  drawLine(px, 10, 2, 40, 2);
+  // Bottom frame
+  drawLine(px, 12, 32, 38, 32);
+  drawLine(px, 10, 34, 40, 34);
+  // Glass sides
+  drawLine(px, 12, 4, 23, 18);
+  drawLine(px, 38, 4, 27, 18);
+  drawLine(px, 23, 18, 12, 32);
+  drawLine(px, 27, 18, 38, 32);
+  // Sand top
+  drawLine(px, 16, 10, 34, 10);
+  // Sand stream
+  drawLine(px, 25, 18, 25, 22);
+  // Sand bottom pile
+  drawArc(px, 25, 28, 8, Math.PI, Math.PI * 2);
+  return pixelsToLines(px, "amber", 8);
+}
+
+/** Dice (for luck, randomness) */
+export function renderDice(): TerminalLine[] {
+  const w = 50, h = 28;
+  const px = createCanvas(w, h);
+  // Die 1
+  drawRect(px, 5, 4, 18, 18);
+  // Dots on die 1 (showing 5)
+  drawCircle(px, 10, 9, 2);
+  drawCircle(px, 18, 9, 2);
+  drawCircle(px, 14, 13, 2);
+  drawCircle(px, 10, 17, 2);
+  drawCircle(px, 18, 17, 2);
+  // Die 2 (tilted)
+  drawRect(px, 28, 6, 16, 16);
+  // Dots on die 2 (showing 3)
+  drawCircle(px, 32, 10, 2);
+  drawCircle(px, 36, 14, 2);
+  drawCircle(px, 40, 18, 2);
+  return pixelsToLines(px, "orange", 6);
+}
+
+/** Crown (for reputation milestones) */
+export function renderCrown(): TerminalLine[] {
+  const w = 70, h = 28;
+  const px = createCanvas(w, h);
+  // Crown points
+  drawLine(px, 15, 4, 15, 16);
+  drawLine(px, 25, 8, 25, 16);
+  drawLine(px, 35, 2, 35, 16);
+  drawLine(px, 45, 8, 45, 16);
+  drawLine(px, 55, 4, 55, 16);
+  // Band
+  drawLine(px, 10, 16, 60, 16);
+  drawLine(px, 10, 20, 60, 20);
+  drawLine(px, 10, 16, 10, 20);
+  drawLine(px, 60, 16, 60, 20);
+  // Jewels on points
+  drawDot(px, 15, 3);
+  drawDot(px, 35, 1);
+  drawDot(px, 55, 3);
+  // Gems on band
+  drawCircle(px, 25, 18, 1);
+  drawCircle(px, 35, 18, 1);
+  drawCircle(px, 45, 18, 1);
+  return pixelsToLines(px, "gold", 4);
+}
+
+/** Dagger (for sabotage, danger) */
+export function renderDagger(): TerminalLine[] {
+  const w = 40, h = 32;
+  const px = createCanvas(w, h);
+  // Blade
+  drawLine(px, 20, 2, 20, 20);
+  drawLine(px, 18, 4, 20, 2);
+  drawLine(px, 22, 4, 20, 2);
+  drawLine(px, 16, 20, 20, 4);
+  drawLine(px, 24, 20, 20, 4);
+  // Guard
+  drawLine(px, 12, 20, 28, 20);
+  drawLine(px, 12, 22, 28, 22);
+  // Handle
+  drawRect(px, 17, 22, 6, 8);
+  // Pommel
+  drawCircle(px, 20, 32, 2);
+  return pixelsToLines(px, "red", 10);
+}
+
+/** Map with X marks the spot */
+export function renderTreasureMap(): TerminalLine[] {
+  const w = 80, h = 32;
+  const px = createCanvas(w, h);
+  // Map borders (torn edges)
+  drawLine(px, 10, 4, 70, 4);
+  drawLine(px, 8, 6, 8, 26);
+  drawLine(px, 72, 6, 72, 26);
+  drawLine(px, 10, 28, 70, 28);
+  // Torn corners
+  drawLine(px, 10, 4, 8, 6);
+  drawLine(px, 70, 4, 72, 6);
+  drawLine(px, 10, 28, 8, 26);
+  drawLine(px, 70, 28, 72, 26);
+  // Paths
+  drawLine(px, 15, 10, 30, 14);
+  drawLine(px, 30, 14, 40, 10);
+  drawLine(px, 40, 10, 55, 18);
+  // X marks the spot
+  drawLine(px, 52, 15, 58, 21);
+  drawLine(px, 58, 15, 52, 21);
+  // Landmarks
+  drawCircle(px, 20, 20, 3);
+  drawRect(px, 35, 18, 4, 6);
+  // Compass rose
+  drawLine(px, 60, 8, 66, 8);
+  drawLine(px, 63, 5, 63, 11);
+  drawDot(px, 63, 4);
+  return pixelsToLines(px, "amber", 4);
 }
