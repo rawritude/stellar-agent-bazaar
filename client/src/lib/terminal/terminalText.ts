@@ -8,17 +8,17 @@ import {
   renderFestival, renderCrash, renderHandshake,
 } from "./brailleArt";
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // ASCII ART
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export const SPLASH_ART: TerminalLine[] = [
   blank(),
   ...renderBazaarEntrance(),
   blank(),
-  line(span("    ╔═══════════════════════════════════════════════════════════════════════════╗", "gold")),
-  line(span("    ║", "gold"), span("          T H E    V E L V E T    L E D G E R    B A Z A A R           ", "gold", true), span("║", "gold")),
-  line(span("    ╚═══════════════════════════════════════════════════════════════════════════╝", "gold")),
+  line(span("    +===========================================================================+", "gold")),
+  line(span("    |", "gold"), span("          T H E    V E L V E T    L E D G E R    B A Z A A R           ", "gold", true), span("|", "gold")),
+  line(span("    +===========================================================================+", "gold")),
   blank(),
   line(span("             Spice lanes. Shady deals. Cosmic ledgers.", "dim")),
   line(span("          Agents in tiny waistcoats. Merchants with grudges.", "dim")),
@@ -26,28 +26,28 @@ export const SPLASH_ART: TerminalLine[] = [
 ];
 
 export const DIVIDER: TerminalLine[] = [
-  line(span("  ═══════════════════════════════════════════", "dim")),
+  line(span("  ===========================================", "dim")),
 ];
 
 export const ORNAMENTAL_DIVIDER: TerminalLine[] = [
   line(
-    span("  ◆━━━━━━━━━━━━━━━", "gold"),
+    span("  ◆---------------", "gold"),
     span("◇", "amber"),
-    span("━━━━━━━━━━━━━━━◆", "gold"),
+    span("---------------◆", "gold"),
   ),
 ];
 
 export const THIN_DIVIDER: TerminalLine[] = [
-  line(span("  ─────────────────────────────────────────", "dim")),
+  line(span("  -----------------------------------------", "dim")),
 ];
 
 const HAKIM_PORTRAIT: TerminalLine[] = [
   ...renderDjinn(),
   blank(),
-  line(span("        ┌──────────────────────────┐", "gold")),
-  line(span("        │", "gold"), span("    H A K I M", "gold", true), span("               │", "gold")),
-  line(span("        │", "gold"), span(" the Ledger-Keeper", "amber"), span("            │", "gold")),
-  line(span("        └──────────────────────────┘", "gold")),
+  line(span("        +--------------------------+", "gold")),
+  line(span("        |", "gold"), span("    H A K I M", "gold", true), span("               |", "gold")),
+  line(span("        |", "gold"), span(" the Ledger-Keeper", "amber"), span("            |", "gold")),
+  line(span("        +--------------------------+", "gold")),
   blank(),
   line(span("     Keeper of Receipts. Counter of Coins.", "dim")),
   line(span("     Witness to Every Deal in the Bazaar.", "dim")),
@@ -55,71 +55,71 @@ const HAKIM_PORTRAIT: TerminalLine[] = [
 
 const AGENT_ART: Record<string, TerminalLine[]> = {
   "pepper-jack": [
-    line(span("      ╭╮ ╭╮", "red")),
-    line(span("      ╰╮╭╯│", "red")),
-    line(span("    ╭──┤╰╯├──╮", "orange")),
-    line(span("    │  ( ◆◆)  │  ", "orange"), span("Pepper Jack", "cyan", true)),
-    line(span("    │  ╰━━╯  │  ", "orange"), span("Senior Haggler", "dim")),
-    line(span("    ╰────────╯", "orange")),
+    line(span("      ++ ++", "red")),
+    line(span("      ++++|", "red")),
+    line(span("    +--++++--+", "orange")),
+    line(span("    |  ( ◆◆)  |  ", "orange"), span("Pepper Jack", "cyan", true)),
+    line(span("    |  +--+  |  ", "orange"), span("Senior Haggler", "dim")),
+    line(span("    +--------+", "orange")),
   ],
   "auntie-null": [
-    line(span("       ┌──┐", "purple")),
-    line(span("    ╭──┤✦✦├──╮", "purple")),
-    line(span("    │  (◇ ◇)  │  ", "purple"), span("Auntie Null", "cyan", true)),
-    line(span("    │  ╰──╯  │  ", "purple"), span("Vibe Auditor", "dim")),
-    line(span("    │  ╱  ╲  │", "purple")),
-    line(span("    ╰────────╯", "purple")),
+    line(span("       +--+", "purple")),
+    line(span("    +--+✦✦+--+", "purple")),
+    line(span("    |  (◇ ◇)  |  ", "purple"), span("Auntie Null", "cyan", true)),
+    line(span("    |  +--+  |  ", "purple"), span("Vibe Auditor", "dim")),
+    line(span("    |  ╱  ╲  |", "purple")),
+    line(span("    +--------+", "purple")),
   ],
   "ledger-pup": [
-    line(span("    ╭╮      ╭╮", "green")),
-    line(span("    ││╭────╮││", "green")),
-    line(span("    ╰┤◆  ◆ ├╯  ", "green"), span("Ledger Pup 4", "cyan", true)),
-    line(span("     │ ╰╮╭╯│   ", "green"), span("Reconciliation Unit", "dim")),
-    line(span("     │  ╰╯  │", "green")),
-    line(span("     ╰──────╯", "green")),
+    line(span("    ++      ++", "green")),
+    line(span("    ||+----+||", "green")),
+    line(span("    ++◆  ◆ ++  ", "green"), span("Ledger Pup 4", "cyan", true)),
+    line(span("     | ++++|   ", "green"), span("Reconciliation Unit", "dim")),
+    line(span("     |  ++  |", "green")),
+    line(span("     +------+", "green")),
   ],
   "marquis-samples": [
-    line(span("    ╔════════╗", "amber")),
-    line(span("    ║ ╭────╮ ║", "amber")),
-    line(span("    ╰─┤◇  ◇├─╯  ", "amber"), span("The Marquis of Samples", "cyan", true)),
-    line(span("      │╰──╯│    ", "amber"), span("Brand Ambassador", "dim")),
-    line(span("    ╭─┤    ├─╮", "amber")),
-    line(span("    ╰─╰────╯─╯", "amber")),
+    line(span("    +========+", "amber")),
+    line(span("    | +----+ |", "amber")),
+    line(span("    +-+◇  ◇+-+  ", "amber"), span("The Marquis of Samples", "cyan", true)),
+    line(span("      |+--+|    ", "amber"), span("Brand Ambassador", "dim")),
+    line(span("    +-+    +-+", "amber")),
+    line(span("    +-+----+-+", "amber")),
   ],
   "crow-sigma": [
-    line(span("        ╭╮", "white")),
-    line(span("      ╭─┤├─╮", "white")),
-    line(span("     ╭┤ ◆◆ ├╮  ", "white"), span("Crow Unit Sigma", "cyan", true)),
-    line(span("     │╰═══╯│   ", "white"), span("Intelligence Operative", "dim")),
-    line(span("     ╰╮   ╭╯", "dim")),
-    line(span("    ──╯   ╰──", "dim")),
+    line(span("        ++", "white")),
+    line(span("      +-++-+", "white")),
+    line(span("     ++ ◆◆ ++  ", "white"), span("Crow Unit Sigma", "cyan", true)),
+    line(span("     |+===+|   ", "white"), span("Intelligence Operative", "dim")),
+    line(span("     ++   ++", "dim")),
+    line(span("    --+   +--", "dim")),
   ],
 };
 
 const DISTRICT_ART: Record<string, TerminalLine[]> = {
   "velvet-steps": [
-    line(span("    ╭──────╮", "gold")),
-    line(span("    │ 🏛️   │  ", "gold"), span("The Velvet Steps", "gold", true)),
-    line(span("    ├──────┤", "gold")),
-    line(span("    │ ░▒▓█ │  ", "gold"), span("Marble colonnades. Silk awnings.", "dim")),
-    line(span("    │ ◆◇◆◇ │  ", "gold"), span("Merchants who judge your embossing.", "dim")),
-    line(span("    ╰──────╯", "gold")),
+    line(span("    +------+", "gold")),
+    line(span("    | 🏛️   |  ", "gold"), span("The Velvet Steps", "gold", true)),
+    line(span("    +------+", "gold")),
+    line(span("    | ░▒▓█ |  ", "gold"), span("Marble colonnades. Silk awnings.", "dim")),
+    line(span("    | ◆◇◆◇ |  ", "gold"), span("Merchants who judge your embossing.", "dim")),
+    line(span("    +------+", "gold")),
   ],
   "fungal-quarter": [
-    line(span("    ╭──────╮", "green")),
-    line(span("    │ 🍄   │  ", "green"), span("The Fungal Quarter", "green", true)),
-    line(span("    ├──────┤", "green")),
-    line(span("    │ ░░▒▒ │  ", "green"), span("Damp. Aromatic. Deeply suspicious.", "dim")),
-    line(span("    │ ◇◇◇◇ │  ", "green"), span("Rare spices. Dubious permits.", "dim")),
-    line(span("    ╰──────╯", "green")),
+    line(span("    +------+", "green")),
+    line(span("    | 🍄   |  ", "green"), span("The Fungal Quarter", "green", true)),
+    line(span("    +------+", "green")),
+    line(span("    | ░░▒▒ |  ", "green"), span("Damp. Aromatic. Deeply suspicious.", "dim")),
+    line(span("    | ◇◇◇◇ |  ", "green"), span("Rare spices. Dubious permits.", "dim")),
+    line(span("    +------+", "green")),
   ],
   "festival-sprawl": [
-    line(span("    ╭──────╮", "orange")),
-    line(span("    │ 🎪   │  ", "orange"), span("Festival Sprawl", "orange", true)),
-    line(span("    ├──────┤", "orange")),
-    line(span("    │ ✦✧✦✧ │  ", "orange"), span("Permanent carnival chaos.", "dim")),
-    line(span("    │ ◆◇◆◇ │  ", "orange"), span("Pop-up stalls. Brand battles.", "dim")),
-    line(span("    ╰──────╯", "orange")),
+    line(span("    +------+", "orange")),
+    line(span("    | 🎪   |  ", "orange"), span("Festival Sprawl", "orange", true)),
+    line(span("    +------+", "orange")),
+    line(span("    | ✦✧✦✧ |  ", "orange"), span("Permanent carnival chaos.", "dim")),
+    line(span("    | ◆◇◆◇ |  ", "orange"), span("Pop-up stalls. Brand battles.", "dim")),
+    line(span("    +------+", "orange")),
   ],
 };
 
@@ -175,32 +175,32 @@ const RESOLVING_ART: TerminalLine[] = [
   blank(),
   line(span("      ✦    ·    ✧    ·    ✦    ·    ✧", "dim")),
   blank(),
-  line(span("    ╔═════════════════════════════════╗", "amber")),
-  line(span("    ║                                 ║", "amber")),
-  line(span("    ║   ◆ ──── ◇ ──── ◆ ──── ◇ ──── ◆║", "gold")),
-  line(span("    ║   │      │      │      │      │║", "dim")),
-  line(span("    ║   ▼      ▼      ▼      ▼      ▼║", "amber")),
-  line(span("    ║                                 ║", "amber")),
-  line(span("    ║   Agents are in the field...    ║", "gold")),
-  line(span("    ║   Negotiating. Trading. Scheming║", "dim")),
-  line(span("    ║                                 ║", "amber")),
-  line(span("    ║   ◇ ──── ◆ ──── ◇ ──── ◆ ──── ◇║", "gold")),
-  line(span("    ║                                 ║", "amber")),
-  line(span("    ╚═════════════════════════════════╝", "amber")),
+  line(span("    +=================================+", "amber")),
+  line(span("    |                                 |", "amber")),
+  line(span("    |   ◆ ---- ◇ ---- ◆ ---- ◇ ---- ◆|", "gold")),
+  line(span("    |   |      |      |      |      ||", "dim")),
+  line(span("    |   ▼      ▼      ▼      ▼      ▼|", "amber")),
+  line(span("    |                                 |", "amber")),
+  line(span("    |   Agents are in the field...    |", "gold")),
+  line(span("    |   Negotiating. Trading. Scheming|", "dim")),
+  line(span("    |                                 |", "amber")),
+  line(span("    |   ◇ ---- ◆ ---- ◇ ---- ◆ ---- ◇|", "gold")),
+  line(span("    |                                 |", "amber")),
+  line(span("    +=================================+", "amber")),
   blank(),
   line(span("         Settling transactions...", "teal")),
   blank(),
 ];
 
-// ── SETUP / ONBOARDING ART ──────────────────────────────────
+// -- SETUP / ONBOARDING ART ----------------------------------
 
 const WALLET_ART: TerminalLine[] = [
   blank(),
   ...renderLedger(),
   blank(),
-  line(span("    ╔═══════════════════════════════════╗", "teal")),
-  line(span("    ║   T H E   C O S M I C   L E D G E R   ║", "teal", true)),
-  line(span("    ╚═══════════════════════════════════╝", "teal")),
+  line(span("    +===================================+", "teal")),
+  line(span("    |   T H E   C O S M I C   L E D G E R   |", "teal", true)),
+  line(span("    +===================================+", "teal")),
   blank(),
   line(span("       Where every transaction is written", "dim")),
   line(span("             among the stars.", "dim")),
@@ -211,20 +211,20 @@ const BRAND_NAMING_ART: TerminalLine[] = [
   blank(),
   line(span("         ✦    ·    ✧    ·    ✦", "dim")),
   blank(),
-  line(span("          ╔═════════════════════╗", "gold")),
-  line(span("         ╱║  ◇ ─── ◆ ─── ◇    ║╲", "gold")),
-  line(span("        ╱ ║                     ║ ╲", "gold")),
-  line(span("       │  ║  ┌───────────────┐  ║  │", "gold")),
-  line(span("       │  ║  │               │  ║  │", "amber")),
-  line(span("       │  ║  │  ▸ __________ │  ║  │", "amber")),
-  line(span("       │  ║  │               │  ║  │", "amber")),
-  line(span("       │  ║  │  Your mark     │  ║  │", "dim")),
-  line(span("       │  ║  │  goes here.    │  ║  │", "dim")),
-  line(span("       │  ║  │               │  ║  │", "amber")),
-  line(span("       │  ║  └───────────────┘  ║  │", "gold")),
-  line(span("        ╲ ║                     ║ ╱", "gold")),
-  line(span("         ╲║  ◆ ─── ◇ ─── ◆    ║╱", "gold")),
-  line(span("          ╚═════════════════════╝", "gold")),
+  line(span("          +=====================+", "gold")),
+  line(span("         ╱|  ◇ --- ◆ --- ◇    |╲", "gold")),
+  line(span("        ╱ |                     | ╲", "gold")),
+  line(span("       |  |  +---------------+  |  |", "gold")),
+  line(span("       |  |  |               |  |  |", "amber")),
+  line(span("       |  |  |  ▸ __________ |  |  |", "amber")),
+  line(span("       |  |  |               |  |  |", "amber")),
+  line(span("       |  |  |  Your mark     |  |  |", "dim")),
+  line(span("       |  |  |  goes here.    |  |  |", "dim")),
+  line(span("       |  |  |               |  |  |", "amber")),
+  line(span("       |  |  +---------------+  |  |", "gold")),
+  line(span("        ╲ |                     | ╱", "gold")),
+  line(span("         ╲|  ◆ --- ◇ --- ◆    |╱", "gold")),
+  line(span("          +=====================+", "gold")),
   blank(),
   line(span("        The Ledger Awaits Your Mark", "amber")),
   blank(),
@@ -237,44 +237,44 @@ const CREW_ASSEMBLING_ART: TerminalLine[] = [
   line(span("              The bazaar stirs...", "amber")),
   line(span("           Agents are being summoned.", "dim")),
   blank(),
-  line(span("        ╭───────╮ ╭───────╮ ╭───────╮", "amber")),
-  line(span("        │ ·   · │ │ ·   · │ │ ·   · │", "amber")),
-  line(span("        │  ╭─╮  │ │  ╭─╮  │ │  ╭─╮  │", "amber")),
-  line(span("        │  │?│  │ │  │?│  │ │  │?│  │", "gold")),
-  line(span("        │  ╰─╯  │ │  ╰─╯  │ │  ╰─╯  │", "amber")),
-  line(span("        │ ·   · │ │ ·   · │ │ ·   · │", "amber")),
-  line(span("        ╰───┬───╯ ╰───┬───╯ ╰───┬───╯", "amber")),
-  line(span("            │         │         │", "dim")),
+  line(span("        +-------+ +-------+ +-------+", "amber")),
+  line(span("        | ·   · | | ·   · | | ·   · |", "amber")),
+  line(span("        |  +-+  | |  +-+  | |  +-+  |", "amber")),
+  line(span("        |  |?|  | |  |?|  | |  |?|  |", "gold")),
+  line(span("        |  +-+  | |  +-+  | |  +-+  |", "amber")),
+  line(span("        | ·   · | | ·   · | | ·   · |", "amber")),
+  line(span("        +---+---+ +---+---+ +---+---+", "amber")),
+  line(span("            |         |         |", "dim")),
   line(span("            ░         ░         ░", "dim")),
   blank(),
   line(span("        Your crew is assembling...", "gold")),
   blank(),
 ];
 
-// ── WIN / LOSE / EVENT ART ──────────────────────────────────
+// -- WIN / LOSE / EVENT ART ----------------------------------
 
 export const CHAMPIONSHIP_WIN_ART: TerminalLine[] = [
   blank(),
   line(span("   ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦", "gold")),
   line(span("   ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·", "gold")),
   blank(),
-  line(span("   ╔═══════════════════════════════════════╗", "gold")),
-  line(span("   ║                                       ║", "gold")),
-  line(span("   ║            ╔═══════════╗              ║", "gold")),
-  line(span("   ║            ║ ★  ★  ★  ║              ║", "gold")),
-  line(span("   ║            ║           ║              ║", "gold")),
-  line(span("   ║            ║ CHAMPION  ║              ║", "gold", true)),
-  line(span("   ║            ║           ║              ║", "gold")),
-  line(span("   ║            ║ ★  ★  ★  ║              ║", "gold")),
-  line(span("   ║            ╚═════╤═════╝              ║", "gold")),
-  line(span("   ║                 ┃┃┃                   ║", "amber")),
-  line(span("   ║                 ┃┃┃                   ║", "amber")),
-  line(span("   ║           ╔═════╧═════╗               ║", "amber")),
-  line(span("   ║           ║ ◆ ◇ ◆ ◇ ◆║               ║", "amber")),
-  line(span("   ║           ║ ◇ ◆ ◇ ◆ ◇║               ║", "amber")),
-  line(span("   ║           ╚═══════════╝               ║", "amber")),
-  line(span("   ║                                       ║", "gold")),
-  line(span("   ╚═══════════════════════════════════════╝", "gold")),
+  line(span("   +=======================================+", "gold")),
+  line(span("   |                                       |", "gold")),
+  line(span("   |            +===========+              |", "gold")),
+  line(span("   |            | ★  ★  ★  |              |", "gold")),
+  line(span("   |            |           |              |", "gold")),
+  line(span("   |            | CHAMPION  |              |", "gold", true)),
+  line(span("   |            |           |              |", "gold")),
+  line(span("   |            | ★  ★  ★  |              |", "gold")),
+  line(span("   |            +=====╤=====+              |", "gold")),
+  line(span("   |                 |||                   |", "amber")),
+  line(span("   |                 |||                   |", "amber")),
+  line(span("   |           +=====╧=====+               |", "amber")),
+  line(span("   |           | ◆ ◇ ◆ ◇ ◆|               |", "amber")),
+  line(span("   |           | ◇ ◆ ◇ ◆ ◇|               |", "amber")),
+  line(span("   |           +===========+               |", "amber")),
+  line(span("   |                                       |", "gold")),
+  line(span("   +=======================================+", "gold")),
   blank(),
   line(span("   ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦", "gold")),
   blank(),
@@ -286,19 +286,19 @@ export const BANKRUPTCY_ART: TerminalLine[] = [
   blank(),
   line(span("    ░  ·  ░  ·  ░  ·  ░  ·  ░  ·  ░", "dim")),
   blank(),
-  line(span("    ╔═══════════════════════════════════╗", "red")),
-  line(span("    ║                                   ║", "red")),
-  line(span("    ║     ┌─────────────────────┐       ║", "dim")),
-  line(span("    ║     │  ╲ ╱  ╲ ╱  ╲ ╱  ╲ ╱│       ║", "dim")),
-  line(span("    ║     │                     │       ║", "dim")),
-  line(span("    ║     │    ✗  C L O S E D   │       ║", "red", true)),
-  line(span("    ║     │                     │       ║", "dim")),
-  line(span("    ║     │   B O A R D E D     │       ║", "dim")),
-  line(span("    ║     │      U P            │       ║", "dim")),
-  line(span("    ║     │                     │       ║", "dim")),
-  line(span("    ║     └─────────────────────┘       ║", "dim")),
-  line(span("    ║                                   ║", "red")),
-  line(span("    ╚═══════════════════════════════════╝", "red")),
+  line(span("    +===================================+", "red")),
+  line(span("    |                                   |", "red")),
+  line(span("    |     +---------------------+       |", "dim")),
+  line(span("    |     |  ╲ ╱  ╲ ╱  ╲ ╱  ╲ ╱|       |", "dim")),
+  line(span("    |     |                     |       |", "dim")),
+  line(span("    |     |    ✗  C L O S E D   |       |", "red", true)),
+  line(span("    |     |                     |       |", "dim")),
+  line(span("    |     |   B O A R D E D     |       |", "dim")),
+  line(span("    |     |      U P            |       |", "dim")),
+  line(span("    |     |                     |       |", "dim")),
+  line(span("    |     +---------------------+       |", "dim")),
+  line(span("    |                                   |", "red")),
+  line(span("    +===================================+", "red")),
   blank(),
   line(span("            B A N K R U P T", "red", true)),
   blank(),
@@ -306,25 +306,25 @@ export const BANKRUPTCY_ART: TerminalLine[] = [
 
 export const MARKET_CRASH_ART: TerminalLine[] = [
   blank(),
-  line(span("        ╔═══════════════════════╗", "red")),
-  line(span("        ║   ░░░ CRASH ░░░       ║", "red", true)),
-  line(span("        ║  ─── ◇ ─── ◇ ───     ║", "orange")),
-  line(span("        ║    ▒▒▒  ▓▓▓  ▒▒▒     ║", "dim")),
-  line(span("        ║      ░░░░░░░░░        ║", "dim")),
-  line(span("        ╚═══════════════════════╝", "red")),
+  line(span("        +=======================+", "red")),
+  line(span("        |   ░░░ CRASH ░░░       |", "red", true)),
+  line(span("        |  --- ◇ --- ◇ ---     |", "orange")),
+  line(span("        |    ▒▒▒  ▓▓▓  ▒▒▒     |", "dim")),
+  line(span("        |      ░░░░░░░░░        |", "dim")),
+  line(span("        +=======================+", "red")),
   blank(),
 ];
 
 export const RIVAL_ARRIVES_ART: TerminalLine[] = [
   blank(),
-  line(span("        ╔═══════════════════════╗", "purple")),
-  line(span("        ║       ╭─────╮         ║", "purple")),
-  line(span("        ║       │ ◆ ◆ │         ║", "purple")),
-  line(span("        ║       │  ▽  │         ║", "purple")),
-  line(span("        ║    ╭──┴─────┴──╮      ║", "purple")),
-  line(span("        ║    │           │      ║", "purple")),
-  line(span("        ║    ╰───────────╯      ║", "purple")),
-  line(span("        ╚═══════════════════════╝", "purple")),
+  line(span("        +=======================+", "purple")),
+  line(span("        |       +-----+         |", "purple")),
+  line(span("        |       | ◆ ◆ |         |", "purple")),
+  line(span("        |       |  ▽  |         |", "purple")),
+  line(span("        |    +--+-----+--+      |", "purple")),
+  line(span("        |    |           |      |", "purple")),
+  line(span("        |    +-----------+      |", "purple")),
+  line(span("        +=======================+", "purple")),
   line(span("      THE CRIMSON LEDGER", "purple", true)),
   line(span("           has arrived.", "dim")),
   blank(),
@@ -333,17 +333,17 @@ export const RIVAL_ARRIVES_ART: TerminalLine[] = [
 export const FESTIVAL_ART: TerminalLine[] = [
   blank(),
   line(span("        ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦", "orange")),
-  line(span("        ╔═══════════════════════╗", "orange")),
-  line(span("        ║  F E S T I V A L      ║", "orange", true)),
-  line(span("        ║      W E E K          ║", "amber", true)),
-  line(span("        ╚═══════════════════════╝", "orange")),
+  line(span("        +=======================+", "orange")),
+  line(span("        |  F E S T I V A L      |", "orange", true)),
+  line(span("        |      W E E K          |", "amber", true)),
+  line(span("        +=======================+", "orange")),
   line(span("        ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦", "orange")),
   blank(),
 ];
 
 export const DAWN_ART: TerminalLine[] = [
   line(span("    ·  ✦  ·     ✧     ·  ✦  ·", "dim")),
-  line(span("  ─────────────────────────────", "dim")),
+  line(span("  -----------------------------", "dim")),
   line(span("  ░░▒▒▓▓████", "amber"), span("  ☀  ", "gold"), span("████▓▓▒▒░░", "amber")),
   line(span("  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓", "amber")),
 ];
@@ -351,78 +351,78 @@ export const DAWN_ART: TerminalLine[] = [
 export const EVENING_ART: TerminalLine[] = [
   line(span("                           ☽", "amber")),
   line(span("    ·  ✧  ·     ·     ·  ✧  ·", "dim")),
-  line(span("  ─────────────────────────────", "dim")),
+  line(span("  -----------------------------", "dim")),
   line(span("    ✦     ✦     ✦     ✦     ✦", "orange")),
 ];
 
 export const DOOR_SLAMMED_ART: TerminalLine[] = [
-  line(span("    ╔═══════════════╗", "red")),
-  line(span("    ║  ✗ REFUSED ✗  ║", "red", true)),
-  line(span("    ╚═══════════════╝", "red")),
+  line(span("    +===============+", "red")),
+  line(span("    |  ✗ REFUSED ✗  |", "red", true)),
+  line(span("    +===============+", "red")),
 ];
 
 export const HANDSHAKE_ART: TerminalLine[] = [
-  line(span("    ╔═══════════════════╗", "green")),
-  line(span("    ║  ★ TRUSTED  ★     ║", "green", true)),
-  line(span("    ║    PARTNER        ║", "green")),
-  line(span("    ╚═══════════════════╝", "green")),
+  line(span("    +===================+", "green")),
+  line(span("    |  ★ TRUSTED  ★     |", "green", true)),
+  line(span("    |    PARTNER        |", "green")),
+  line(span("    +===================+", "green")),
 ];
 
 export const WEEKLY_REPORT_ART: TerminalLine[] = [
   blank(),
-  line(span("    ╔═══════════════════════╗", "amber")),
-  line(span("    ║  WEEKLY  LEDGER       ║", "amber", true)),
-  line(span("    ╠═══════════════════════╣", "amber")),
-  line(span("    ║  ┌───────────────┐    ║", "dim")),
-  line(span("    ║  │   Summary     │    ║", "dim")),
-  line(span("    ║  └───────────────┘    ║", "dim")),
-  line(span("    ╚═══════════════════════╝", "amber")),
+  line(span("    +=======================+", "amber")),
+  line(span("    |  WEEKLY  LEDGER       |", "amber", true)),
+  line(span("    +=======================+", "amber")),
+  line(span("    |  +---------------+    |", "dim")),
+  line(span("    |  |   Summary     |    |", "dim")),
+  line(span("    |  +---------------+    |", "dim")),
+  line(span("    +=======================+", "amber")),
   blank(),
 ];
 
-// ── AGENT SPECIALTY PORTRAITS (for AI-generated agents) ─────
+// -- AGENT SPECIALTY PORTRAITS (for AI-generated agents) -----
 
 export const SPECIALTY_ART: Record<string, TerminalLine[]> = {
   trade: [
-    line(span("       ╭─╮", "gold")),
-    line(span("    ╭──┤¤├──╮", "gold")),
-    line(span("    │  (◆◆)  │", "gold")),
-    line(span("    │  ╰━╯  │  ", "gold"), span("Trader", "gold", true)),
-    line(span("    ╰───┬───╯", "gold")),
+    line(span("       +-+", "gold")),
+    line(span("    +--+¤+--+", "gold")),
+    line(span("    |  (◆◆)  |", "gold")),
+    line(span("    |  +-+  |  ", "gold"), span("Trader", "gold", true)),
+    line(span("    +---+---+", "gold")),
   ],
   scout: [
-    line(span("      ╭──╮", "teal")),
-    line(span("    ╭─┤✦✦├─╮", "teal")),
-    line(span("    │ (◇ ◇) │", "teal")),
-    line(span("    │  ╰─╯  │  ", "teal"), span("Scout", "teal", true)),
-    line(span("    ╰───┬───╯", "teal")),
+    line(span("      +--+", "teal")),
+    line(span("    +-+✦✦+-+", "teal")),
+    line(span("    | (◇ ◇) |", "teal")),
+    line(span("    |  +-+  |  ", "teal"), span("Scout", "teal", true)),
+    line(span("    +---+---+", "teal")),
   ],
   investigation: [
-    line(span("      ╭──╮", "purple")),
-    line(span("    ╭─┤??├─╮", "purple")),
-    line(span("    │ (◆ ◆) │", "purple")),
-    line(span("    │  ╰─╯  │  ", "purple"), span("Investigator", "purple", true)),
-    line(span("    ╰───┬───╯", "purple")),
+    line(span("      +--+", "purple")),
+    line(span("    +-+??+-+", "purple")),
+    line(span("    | (◆ ◆) |", "purple")),
+    line(span("    |  +-+  |  ", "purple"), span("Investigator", "purple", true)),
+    line(span("    +---+---+", "purple")),
   ],
   branding: [
-    line(span("    ╔══════╗", "orange")),
-    line(span("    ║╭────╮║", "orange")),
-    line(span("    ║│★  ★│║", "orange")),
-    line(span("    ║╰────╯║  ", "orange"), span("Promoter", "orange", true)),
-    line(span("    ╚══╤═══╝", "orange")),
+    line(span("    +======+", "orange")),
+    line(span("    |+----+|", "orange")),
+    line(span("    ||★  ★||", "orange")),
+    line(span("    |+----+|  ", "orange"), span("Promoter", "orange", true)),
+    line(span("    +==╤===+", "orange")),
   ],
   diplomacy: [
-    line(span("      ╭──╮", "green")),
-    line(span("    ╭─┤◇◆├─╮", "green")),
-    line(span("    │ (◆ ◇) │", "green")),
-    line(span("    │  ╰─╯  │  ", "green"), span("Diplomat", "green", true)),
-    line(span("    ╰───┬───╯", "green")),
+    line(span("      +--+", "green")),
+    line(span("    +-+◇◆+-+", "green")),
+    line(span("    | (◆ ◇) |", "green")),
+    line(span("    |  +-+  |  ", "green"), span("Diplomat", "green", true)),
+    line(span("    +---+---+", "green")),
   ],
 };
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // NARRATOR DIALOGUE — Hakim the Ledger-Keeper
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export function hakimIntro(): TerminalLine[] {
   return [
@@ -670,9 +670,9 @@ export function hakimMorningBrief(state: GameState): TerminalLine[] {
   return lines;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // SCREEN CONTENT BUILDERS
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export function buildDistrictChoices(state: GameState): { lines: TerminalLine[]; choices: TerminalChoice[] } {
   const districts = state.districts.filter(d => d.isUnlocked);
@@ -1211,9 +1211,9 @@ export function buildRumorsView(state: GameState): TerminalLine[] {
   return lines;
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // STELLAR ONBOARDING
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 const STELLAR_ART: TerminalLine[] = [
   blank(),
@@ -1221,16 +1221,16 @@ const STELLAR_ART: TerminalLine[] = [
   line(span("          ✧         ·         ✧", "dim")),
   line(span("   ·         ✦         ✦         ✦         ·", "dim")),
   blank(),
-  line(span("    ╔═══════════════════════════════════╗", "teal")),
-  line(span("    ║                                   ║", "teal")),
-  line(span("    ║     ✦   S T E L L A R   ✦        ║", "teal", true)),
-  line(span("    ║       N E T W O R K              ║", "teal")),
-  line(span("    ║                                   ║", "teal")),
-  line(span("    ║   ◇ ─── ◆ ─── ◇ ─── ◆ ─── ◇     ║", "teal")),
-  line(span("    ║   │     │     │     │     │       ║", "dim")),
-  line(span("    ║   ◆ ─── ◇ ─── ◆ ─── ◇ ─── ◆     ║", "teal")),
-  line(span("    ║                                   ║", "teal")),
-  line(span("    ╚═══════════════════════════════════╝", "teal")),
+  line(span("    +===================================+", "teal")),
+  line(span("    |                                   |", "teal")),
+  line(span("    |     ✦   S T E L L A R   ✦        |", "teal", true)),
+  line(span("    |       N E T W O R K              |", "teal")),
+  line(span("    |                                   |", "teal")),
+  line(span("    |   ◇ --- ◆ --- ◇ --- ◆ --- ◇     |", "teal")),
+  line(span("    |   |     |     |     |     |       |", "dim")),
+  line(span("    |   ◆ --- ◇ --- ◆ --- ◇ --- ◆     |", "teal")),
+  line(span("    |                                   |", "teal")),
+  line(span("    +===================================+", "teal")),
   blank(),
   line(span("       A cosmic ledger written in starlight.", "dim")),
   blank(),
@@ -1405,9 +1405,9 @@ export function hakimStellarSkipped(): TerminalLine[] {
   ];
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // AGENT NFTs (SEP-50)
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export function buildNFTView(state: GameState, walletAddress?: string): { lines: TerminalLine[]; choices: TerminalChoice[] } {
   const lines: TerminalLine[] = [
@@ -1474,50 +1474,50 @@ export function buildNFTMintedLines(agentName: string, tokenId: string, txHash?:
   ];
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // EVENT SCREENS
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // RANDOM EVENT ART & DISPLAY
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 const EVENT_CATEGORY_ART: Record<string, TerminalLine[]> = {
   merchant: [
-    line(span("    ╔═══════════════════╗", "gold")),
-    line(span("    ║  ◆ MERCHANT  ◆    ║", "gold", true)),
-    line(span("    ║    ENCOUNTER      ║", "amber")),
-    line(span("    ╚═══════════════════╝", "gold")),
+    line(span("    +===================+", "gold")),
+    line(span("    |  ◆ MERCHANT  ◆    |", "gold", true)),
+    line(span("    |    ENCOUNTER      |", "amber")),
+    line(span("    +===================+", "gold")),
   ],
   stranger: [
-    line(span("    ╔═══════════════════╗", "purple")),
-    line(span("    ║  ◇ MYSTERIOUS ◇   ║", "purple", true)),
-    line(span("    ║     STRANGER      ║", "purple")),
-    line(span("    ╚═══════════════════╝", "purple")),
+    line(span("    +===================+", "purple")),
+    line(span("    |  ◇ MYSTERIOUS ◇   |", "purple", true)),
+    line(span("    |     STRANGER      |", "purple")),
+    line(span("    +===================+", "purple")),
   ],
   disaster: [
-    line(span("    ╔═══════════════════╗", "red")),
-    line(span("    ║  ░ MARKET  ░      ║", "red", true)),
-    line(span("    ║   DISRUPTION      ║", "orange")),
-    line(span("    ╚═══════════════════╝", "red")),
+    line(span("    +===================+", "red")),
+    line(span("    |  ░ MARKET  ░      |", "red", true)),
+    line(span("    |   DISRUPTION      |", "orange")),
+    line(span("    +===================+", "red")),
   ],
   celebration: [
-    line(span("    ╔═══════════════════╗", "orange")),
-    line(span("    ║  ✦ CELEBRATION ✦  ║", "orange", true)),
-    line(span("    ║                   ║", "amber")),
-    line(span("    ╚═══════════════════╝", "orange")),
+    line(span("    +===================+", "orange")),
+    line(span("    |  ✦ CELEBRATION ✦  |", "orange", true)),
+    line(span("    |                   |", "amber")),
+    line(span("    +===================+", "orange")),
   ],
   agent: [
-    line(span("    ╔═══════════════════╗", "cyan")),
-    line(span("    ║  ◆ AGENT  ◆       ║", "cyan", true)),
-    line(span("    ║    EVENT          ║", "cyan")),
-    line(span("    ╚═══════════════════╝", "cyan")),
+    line(span("    +===================+", "cyan")),
+    line(span("    |  ◆ AGENT  ◆       |", "cyan", true)),
+    line(span("    |    EVENT          |", "cyan")),
+    line(span("    +===================+", "cyan")),
   ],
   mystery: [
-    line(span("    ╔═══════════════════╗", "purple")),
-    line(span("    ║  ? ? MYSTERY ? ?  ║", "purple", true)),
-    line(span("    ║                   ║", "purple")),
-    line(span("    ╚═══════════════════╝", "purple")),
+    line(span("    +===================+", "purple")),
+    line(span("    |  ? ? MYSTERY ? ?  |", "purple", true)),
+    line(span("    |                   |", "purple")),
+    line(span("    +===================+", "purple")),
   ],
 };
 
@@ -1739,9 +1739,9 @@ export function buildEveningHeader(day: number): TerminalLine[] {
   ];
 }
 
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 // SAVE / RESUME
-// ═══════════════════════════════════════════════════════════════
+// ===============================================================
 
 export function buildResumePrompt(summary: { brandName: string; day: number; cash: number; reputation: number; savedAt: string }): TerminalLine[] {
   return [
