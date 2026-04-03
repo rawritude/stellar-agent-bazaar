@@ -2,6 +2,11 @@ import { line, span, blank, indented, type TerminalLine, type TerminalChoice } f
 import type { GameState, Agent, District, MissionTemplate, ActiveMission, Counterparty, ActionStep } from "../gameData";
 import { ACTION_TYPE_INFO } from "../gameData";
 import { getReputationTier, getCashTier } from "../gameEngine";
+import {
+  renderBazaarEntrance, renderDjinn, renderTrophy, renderLedger,
+  renderChest, renderMarketplace, renderCaravan, renderSpyScene,
+  renderFestival, renderCrash, renderHandshake,
+} from "./brailleArt";
 
 // ═══════════════════════════════════════════════════════════════
 // ASCII ART
@@ -9,8 +14,7 @@ import { getReputationTier, getCashTier } from "../gameEngine";
 
 export const SPLASH_ART: TerminalLine[] = [
   blank(),
-  line(span("          ·  ✦  ·     ✧     ·  ✦  ·", "dim")),
-  line(span("       ✧     ·   ✦   ·   ✧   ·     ✦", "dim")),
+  ...renderBazaarEntrance(),
   blank(),
   line(span("                    ╭───╮", "gold")),
   line(span("                ╭───┤ ☽ ├───╮", "gold")),
@@ -53,101 +57,12 @@ export const THIN_DIVIDER: TerminalLine[] = [
 ];
 
 const HAKIM_PORTRAIT: TerminalLine[] = [
-  line(span("               ✦  ·  ✧  ·  ✦", "dim")),
-  line(span("            ·    ✧    ·    ✧    ·", "dim")),
-  line(
-    span("              ▄", "amber"),
-    span("██████████", "gold"),
-    span("▄", "amber"),
-  ),
-  line(
-    span("             ▐", "amber"),
-    span("██", "gold"),
-    span("▀▀▀▀▀▀", "amber"),
-    span("██", "gold"),
-    span("▌", "amber"),
-  ),
-  line(
-    span("             ▐", "amber"),
-    span("█", "gold"),
-    span(" ◆    ◆ ", "white"),
-    span("█", "gold"),
-    span("▌", "amber"),
-  ),
-  line(
-    span("             ▐", "amber"),
-    span("█", "gold"),
-    span("    ▽    ", "white"),
-    span("█", "gold"),
-    span("▌", "amber"),
-  ),
-  line(
-    span("             ▐", "amber"),
-    span("█", "gold"),
-    span("  ╰──╯  ", "white"),
-    span("█", "gold"),
-    span("▌", "amber"),
-  ),
-  line(
-    span("          ▄▄▄", "gold"),
-    span("▐", "amber"),
-    span("██████████", "gold"),
-    span("▌", "amber"),
-    span("▄▄▄", "gold"),
-  ),
-  line(
-    span("         ▐", "gold"),
-    span("███", "amber"),
-    span("▌", "gold"),
-    span("        ", "dim"),
-    span("▐", "gold"),
-    span("███", "amber"),
-    span("▌", "gold"),
-  ),
-  line(
-    span("          ▐", "gold"),
-    span("██", "amber"),
-    span("▒░      ░▒", "dim"),
-    span("██", "amber"),
-    span("▌", "gold"),
-  ),
-  line(
-    span("           ▐", "gold"),
-    span("█", "amber"),
-    span("▒░        ░▒", "dim"),
-    span("█", "amber"),
-    span("▌", "gold"),
-  ),
-  line(
-    span("            ", "dim"),
-    span("▀▒░          ░▒▀", "dim"),
-  ),
-  line(
-    span("              ░░        ░░", "dim"),
-  ),
-  line(
-    span("               ░░░░░░░░░░", "dim"),
-  ),
-  line(
-    span("                ▒▓████▓▒", "dim"),
-  ),
+  ...renderDjinn(),
   blank(),
-  line(
-    span("        ┌──────────────────────────┐", "gold"),
-  ),
-  line(
-    span("        │", "gold"),
-    span("    H A K I M", "gold", true),
-    span("               │", "gold"),
-  ),
-  line(
-    span("        │", "gold"),
-    span(" the Ledger-Keeper", "amber"),
-    span("            │", "gold"),
-  ),
-  line(
-    span("        └──────────────────────────┘", "gold"),
-  ),
+  line(span("        ┌──────────────────────────┐", "gold")),
+  line(span("        │", "gold"), span("    H A K I M", "gold", true), span("               │", "gold")),
+  line(span("        │", "gold"), span(" the Ledger-Keeper", "amber"), span("            │", "gold")),
+  line(span("        └──────────────────────────┘", "gold")),
   blank(),
   line(span("     Keeper of Receipts. Counter of Coins.", "dim")),
   line(span("     Witness to Every Deal in the Bazaar.", "dim")),
@@ -296,28 +211,11 @@ const RESOLVING_ART: TerminalLine[] = [
 
 const WALLET_ART: TerminalLine[] = [
   blank(),
-  line(span("              ✦         ✧         ✦", "dim")),
-  line(span("         ✧         ·         ·         ✧", "dim")),
-  line(span("    ·         ✦         ✦         ✦         ·", "dim")),
+  ...renderLedger(),
   blank(),
-  line(span("            ╔═══════════════════════╗", "teal")),
-  line(span("           ╱║                       ║╲", "teal")),
-  line(span("          ╱ ║  ✦ ─── ◇ ─── ◇ ─── ✦ ║ ╲", "teal")),
-  line(span("         ╱  ║                       ║  ╲", "teal")),
-  line(span("        │   ║   ╭─────────────╮     ║   │", "teal")),
-  line(span("        │   ║   │ ✧  ·  ✦  · ✧│     ║   │", "gold")),
-  line(span("        │   ║   │             │     ║   │", "gold")),
-  line(span("        │   ║   │  THE COSMIC │     ║   │", "gold", true)),
-  line(span("        │   ║   │   LEDGER    │     ║   │", "gold", true)),
-  line(span("        │   ║   │             │     ║   │", "gold")),
-  line(span("        │   ║   │ ✧  ·  ✦  · ✧│     ║   │", "gold")),
-  line(span("        │   ║   ╰─────────────╯     ║   │", "teal")),
-  line(span("         ╲  ║                       ║  ╱", "teal")),
-  line(span("          ╲ ║  ◆ ─── ◇ ─── ◇ ─── ◆ ║ ╱", "teal")),
-  line(span("           ╲║                       ║╱", "teal")),
-  line(span("            ╚═══════════════════════╝", "teal")),
-  blank(),
-  line(span("    ·    ✦    ·    ✧    ·    ✦    ·    ✧    ·", "dim")),
+  line(span("    ╔═══════════════════════════════════╗", "teal")),
+  line(span("    ║   T H E   C O S M I C   L E D G E R   ║", "teal", true)),
+  line(span("    ╚═══════════════════════════════════╝", "teal")),
   blank(),
   line(span("       Where every transaction is written", "dim")),
   line(span("             among the stars.", "dim")),
