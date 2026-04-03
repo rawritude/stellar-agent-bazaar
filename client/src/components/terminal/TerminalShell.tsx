@@ -24,21 +24,44 @@ function TerminalLineView({
     return <div style={{ height: "1.4em" }} />;
   }
 
-  // CSS-rendered title (no character alignment needed)
+  // CSS-rendered title — uses web-safe styling, always readable
   if (line.cssTitle) {
     const { text, color, size, glow } = line.cssTitle;
+    const fontSize = size || "1.2em";
+    const isLarge = parseFloat(fontSize) >= 1.4;
     return (
       <div style={{
-        fontSize: size || "1.4em",
+        fontSize,
         fontWeight: "bold",
         color: TERMINAL_COLORS[color],
         textAlign: "center",
-        padding: "4px 0",
-        textShadow: glow ? `0 0 10px ${TERMINAL_COLORS[color]}60, 0 0 20px ${TERMINAL_COLORS[color]}30` : undefined,
-        letterSpacing: "0.15em",
+        padding: isLarge ? "8px 0" : "2px 0",
+        textShadow: glow ? `0 0 8px ${TERMINAL_COLORS[color]}50, 0 0 16px ${TERMINAL_COLORS[color]}25` : undefined,
+        letterSpacing: isLarge ? "0.2em" : "0.1em",
+        textTransform: isLarge ? "uppercase" as const : undefined,
+        fontFamily: TERMINAL_FONT,
       }}>
         {text}
       </div>
+    );
+  }
+
+  // Pre-formatted text block (figlet titles — rendered as <pre> to preserve alignment)
+  if (line.preBlock) {
+    const { text, color, glow } = line.preBlock;
+    return (
+      <pre style={{
+        color: TERMINAL_COLORS[color],
+        textAlign: "center",
+        margin: "4px 0",
+        fontFamily: TERMINAL_FONT,
+        fontSize: "0.85em",
+        lineHeight: "1.1",
+        textShadow: glow ? `0 0 6px ${TERMINAL_COLORS[color]}40` : undefined,
+        overflow: "hidden",
+      }}>
+        {text}
+      </pre>
     );
   }
 

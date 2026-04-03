@@ -1,4 +1,4 @@
-import { line, span, blank, indented, title, divider, figletLines, type TerminalLine, type TerminalChoice } from "./terminalTypes";
+import { line, span, blank, indented, title, divider, figletBlock, type TerminalLine, type TerminalChoice } from "./terminalTypes";
 import type { GameState, Agent, District, MissionTemplate, ActiveMission, Counterparty, ActionStep } from "../gameData";
 import { ACTION_TYPE_INFO } from "../gameData";
 import { getReputationTier, getCashTier } from "../gameEngine";
@@ -23,7 +23,7 @@ export const SPLASH_ART: TerminalLine[] = [
   blank(),
   ...renderBazaarEntrance(),
   blank(),
-  ...figletLines(TITLE_FIGLET, "gold"),
+  figletBlock(TITLE_FIGLET, "gold", true),
   blank(),
   title("The Velvet Ledger", "amber", "0.9em", false),
   blank(),

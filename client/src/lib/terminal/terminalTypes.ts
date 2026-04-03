@@ -27,6 +27,7 @@ export interface TerminalLine {
   // CSS-rendered elements (bypass character rendering)
   cssTitle?: { text: string; color: TerminalColor; size?: string; glow?: boolean };
   cssDivider?: { color: TerminalColor; style?: "solid" | "dashed" | "dotted" };
+  preBlock?: { text: string; color: TerminalColor; glow?: boolean }; // pre-formatted block (figlet etc.)
 }
 
 export interface TerminalChoice {
@@ -135,11 +136,12 @@ export function title(text: string, color: TerminalColor = "gold", size: string 
  * Generate a figlet-style ASCII art title. These look terminal-native.
  * Uses pre-rendered text (call generateFiglet on the server or at build time).
  */
-export function figletLines(asciiText: string, color: TerminalColor = "gold"): TerminalLine[] {
-  return asciiText.split("\n").filter(l => l.trim()).map(l => ({
-    spans: [{ text: l, color }],
-    centered: true,
-  }));
+/**
+ * Render pre-formatted ASCII text as a single block (preserves alignment).
+ * Used for figlet titles and other multi-line character art.
+ */
+export function figletBlock(asciiText: string, color: TerminalColor = "gold", glow: boolean = true): TerminalLine {
+  return { spans: [], centered: true, preBlock: { text: asciiText, color, glow } };
 }
 
 export function divider(color: TerminalColor = "dim", style: "solid" | "dashed" | "dotted" = "solid"): TerminalLine {

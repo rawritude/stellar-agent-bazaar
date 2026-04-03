@@ -14,4 +14,4 @@ export const TERMINAL_COLORS: Record<TerminalColor, string> = {
 };
 
 export const TERMINAL_BG = "#131110";
-export const TERMINAL_FONT = '"Berkeley Mono", "Fira Code", "JetBrains Mono", "Cascadia Code", "Courier New", monospace';
+export const TERMINAL_FONT = '"JetBrains Mono", "Berkeley Mono", "Fira Code", "Cascadia Code", "Courier New", monospace';
