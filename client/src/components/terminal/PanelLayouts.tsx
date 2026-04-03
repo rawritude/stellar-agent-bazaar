@@ -1,0 +1,513 @@
+import { useGame } from "@/lib/gameContext";
+import { TERMINAL_COLORS } from "@/lib/terminal/terminalColors";
+import { ACTION_TYPE_INFO } from "@/lib/gameData";
+import { getReputationTier, getCashTier } from "@/lib/gameEngine";
+import { TerminalPanel, PanelGrid, PanelText, PanelLine, PanelSpacer, StatBar } from "./TerminalPanel";
+import type { TerminalState } from "@/lib/terminal/terminalTypes";
+
+// ═══════════════════════════════════════════════════════════════
+// MORNING BRIEF — Dashboard layout
+// ═══════════════════════════════════════════════════════════════
+
+export function MorningBriefLayout({ term }: { term: TerminalState }) {
+  const { state, stellarAdapter, aiEnabled } = useGame();
+  const rep = getReputationTier(state.reputation);
+  const cash = getCashTier(state.cash);
+  const idle = state.agents.filter(a => a.status === "idle");
+
+  // Hakim greeting based on state
+  let greeting: string;
+  if (state.day === 1) {
+    greeting = "The sun rises on your first day in the bazaar. Let us see what fortune has in store.";
+  } else if (state.cash < 30) {
+    greeting = "Dawn again... and our purse is looking rather thin. We must be strategic today.";
+  } else if (state.cash > 300) {
+    greeting = "Another glorious morning! With this much gold, even the nobles will take our calls.";
+  } else {
+    const greetings = [
+      "Another day, another opportunity to either profit or panic. I prefer profit.",
+      "The spice lanes await! I have checked our ledgers. We are still solvent. Barely.",
+      "Good morning! The merchants are stirring, the gossip crows are gossiping. Time to work.",
+    ];
+    greeting = greetings[state.day % greetings.length];
+  }
+
+  return (
+    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
+      {/* Top row: Hakim + Treasury */}
+      <PanelGrid columns="1fr 280px">
+        <TerminalPanel title="Hakim Says" titleColor="gold">
+          <PanelLine>
+            <PanelText color="gold">"{greeting}"</PanelText>
+          </PanelLine>
+          <PanelSpacer />
+          <PanelLine>
+            <PanelText dim>Day {state.day} — {state.brandName}</PanelText>
+          </PanelLine>
+        </TerminalPanel>
+
+        <TerminalPanel title="Treasury" titleColor="gold">
+          <PanelLine>
+            <PanelText dim>Cash: </PanelText>
+            <PanelText color="gold" bold>{cash.emoji} {state.cash}¤</PanelText>
+            <PanelText dim> ({cash.name})</PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText dim>Reputation: </PanelText>
+            <PanelText color="purple" bold>{rep.emoji} {state.reputation}/100</PanelText>
+            <PanelText dim> ({rep.name})</PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText dim>Missions: </PanelText>
+            <PanelText color="white">{state.completedMissions.length}</PanelText>
+            <PanelText dim> completed</PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText dim>Settlement: </PanelText>
+            <PanelText color={stellarAdapter ? "teal" : "dim"}>
+              {stellarAdapter ? "Stellar Testnet" : "Simulated"}
+            </PanelText>
+            {aiEnabled && <PanelText color="purple"> + AI</PanelText>}
+          </PanelLine>
+        </TerminalPanel>
+      </PanelGrid>
+
+      {/* Bottom row: Agents + Rumor */}
+      <PanelGrid columns="1fr 280px" style={{ flex: 1 }}>
+        <TerminalPanel title="Agents" titleColor="cyan">
+          {state.agents.map(a => (
+            <PanelLine key={a.id}>
+              <PanelText color="white">{a.emoji} </PanelText>
+              <PanelText color="cyan" bold>{a.name.padEnd(22)}</PanelText>
+              <PanelText color={a.status === "idle" ? "green" : "orange"}>
+                {a.status.padEnd(10)}
+              </PanelText>
+              <PanelText dim>Morale: </PanelText>
+              <PanelText color={a.morale > 50 ? "green" : "red"}>{a.morale}%</PanelText>
+            </PanelLine>
+          ))}
+        </TerminalPanel>
+
+        <TerminalPanel title="Latest Rumor" titleColor="orange">
+          {state.rumors.length > 0 ? (
+            <PanelLine>
+              <PanelText dim>
+                "{state.rumors[state.rumors.length - 1]}"
+              </PanelText>
+            </PanelLine>
+          ) : (
+            <PanelLine><PanelText dim>No rumors yet.</PanelText></PanelLine>
+          )}
+          {state.networkStats.totalTransactions > 0 && (
+            <>
+              <PanelSpacer />
+              <PanelLine>
+                <PanelText dim>Network: </PanelText>
+                <PanelText color="teal">{state.networkStats.totalTransactions}</PanelText>
+                <PanelText dim> txns</PanelText>
+              </PanelLine>
+              {state.networkStats.favoriteCounterparty && (
+                <PanelLine>
+                  <PanelText dim>Top: </PanelText>
+                  <PanelText color="white">{state.networkStats.favoriteCounterparty}</PanelText>
+                </PanelLine>
+              )}
+            </>
+          )}
+        </TerminalPanel>
+      </PanelGrid>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENT SELECTION — Cards beside mission info
+// ═══════════════════════════════════════════════════════════════
+
+export function AgentSelectLayout({ term }: { term: TerminalState }) {
+  const { state } = useGame();
+  const idle = state.agents.filter(a => a.status === "idle");
+  const district = state.districts.find(d => d.id === term.pending.districtId);
+  const mission = district?.availableMissions.find(m => m.id === term.pending.missionId);
+
+  return (
+    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
+      <PanelGrid columns="1fr 260px" style={{ flex: 1 }}>
+        <TerminalPanel title="Choose Agent" titleColor="cyan" scroll>
+          <PanelLine>
+            <PanelText color="gold">"Who shall carry our hopes and our money?"</PanelText>
+          </PanelLine>
+          <PanelSpacer />
+          {idle.length === 0 ? (
+            <PanelLine><PanelText color="red">No agents available. All deployed.</PanelText></PanelLine>
+          ) : (
+            idle.map((a, i) => (
+              <div key={a.id} style={{ marginBottom: "8px" }}>
+                <PanelLine>
+                  <PanelText color="amber">[{i + 1}] </PanelText>
+                  <PanelText color="white">{a.emoji} </PanelText>
+                  <PanelText color="cyan" bold>{a.name}</PanelText>
+                  <PanelText dim> — {a.title}</PanelText>
+                </PanelLine>
+                <PanelLine>
+                  <PanelText dim>    Haggle:</PanelText>
+                  <PanelText color={a.haggleBonus > 0 ? "green" : "red"}>{a.haggleBonus > 0 ? "+" : ""}{a.haggleBonus}</PanelText>
+                  <PanelText dim> Scout:</PanelText>
+                  <PanelText color={a.scoutBonus > 0 ? "green" : "red"}>{a.scoutBonus > 0 ? "+" : ""}{a.scoutBonus}</PanelText>
+                  <PanelText dim> Charm:</PanelText>
+                  <PanelText color={a.charmBonus > 0 ? "green" : "red"}>{a.charmBonus > 0 ? "+" : ""}{a.charmBonus}</PanelText>
+                </PanelLine>
+                <PanelLine>
+                  <PanelText dim>    Fee: </PanelText>
+                  <PanelText color="gold">{a.costPerMission}¤</PanelText>
+                  <PanelText dim>  Morale: </PanelText>
+                  <PanelText color={a.morale > 50 ? "green" : "red"}>{a.morale}%</PanelText>
+                </PanelLine>
+              </div>
+            ))
+          )}
+        </TerminalPanel>
+
+        <TerminalPanel title="Mission" titleColor="gold">
+          {mission && district ? (
+            <>
+              <PanelLine>
+                <PanelText color="white" bold>{mission.name}</PanelText>
+              </PanelLine>
+              <PanelSpacer />
+              <PanelLine>
+                <PanelText dim>District:</PanelText>
+              </PanelLine>
+              <PanelLine>
+                <PanelText color="gold">{district.emoji} {district.name}</PanelText>
+              </PanelLine>
+              <PanelSpacer />
+              <PanelLine>
+                <PanelText dim>Route:</PanelText>
+              </PanelLine>
+              {mission.actionSequence.map((a, i) => {
+                const info = ACTION_TYPE_INFO[a];
+                return (
+                  <PanelLine key={i}>
+                    <PanelText color="teal"> {info.emoji} {info.label}</PanelText>
+                  </PanelLine>
+                );
+              })}
+              <PanelSpacer />
+              <PanelLine>
+                <PanelText dim>Budget: </PanelText>
+                <PanelText color="gold">{mission.baseBudget}¤</PanelText>
+              </PanelLine>
+              <PanelLine>
+                <PanelText dim>Reward: </PanelText>
+                <PanelText color="green">~{mission.baseReward}¤</PanelText>
+              </PanelLine>
+              <PanelLine>
+                <PanelText dim>Risk:   </PanelText>
+                <PanelText color="red">{"!".repeat(mission.riskLevel)}</PanelText>
+              </PanelLine>
+            </>
+          ) : (
+            <PanelLine><PanelText dim>No mission selected</PanelText></PanelLine>
+          )}
+        </TerminalPanel>
+      </PanelGrid>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MISSION RESOLUTION — Log + sidebars
+// ═══════════════════════════════════════════════════════════════
+
+export function ResolutionLayout({ term }: { term: TerminalState }) {
+  const { state } = useGame();
+  const startIdx = state.completedMissions.length - (state.dailyReport?.missionsRun ?? 0);
+  const latestMissions = state.completedMissions.slice(Math.max(0, startIdx));
+  const currentMission = latestMissions[Math.min(term.missionPage - 1, latestMissions.length - 1)];
+  const result = currentMission?.result;
+
+  if (!result) return null;
+
+  const currentStep = result.actionSteps[result.actionSteps.length - 1];
+
+  return (
+    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
+      <PanelGrid columns="1fr 240px" style={{ flex: 1 }}>
+        <TerminalPanel title="Mission Log" titleColor="amber" scroll>
+          <PanelLine>
+            <PanelText color="cyan" bold>{currentMission.agent.emoji} {currentMission.agent.name}</PanelText>
+            <PanelText dim> — {currentMission.template.name}</PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText dim>{currentMission.district.emoji} {currentMission.district.name} | {currentMission.riskPosture}</PanelText>
+          </PanelLine>
+          <PanelSpacer />
+
+          {result.actionSteps.map((step, i) => {
+            const info = ACTION_TYPE_INFO[step.actionType];
+            return (
+              <div key={i} style={{ marginBottom: "8px" }}>
+                <PanelLine>
+                  <PanelText dim>{i + 1}. </PanelText>
+                  <PanelText color="white">{step.counterpartyEmoji} {step.counterpartyName}</PanelText>
+                  <PanelText color="teal"> [{info.label}]</PanelText>
+                  <PanelText color={step.success ? "green" : "red"}> {step.success ? "✓" : "✗"}</PanelText>
+                </PanelLine>
+
+                {/* AI-generated dialogue */}
+                {step.scene?.dialogue?.map((d, di) => (
+                  <PanelLine key={di}>
+                    <PanelText color="cyan">  {d.speaker}: </PanelText>
+                    <PanelText color="white">"{d.line}"</PanelText>
+                  </PanelLine>
+                ))}
+
+                {step.scene?.agent_reasoning && (
+                  <PanelLine>
+                    <PanelText dim>  [Agent: {step.scene.agent_reasoning}]</PanelText>
+                  </PanelLine>
+                )}
+
+                {!step.scene && (
+                  <PanelLine>
+                    <PanelText dim>  {step.description}</PanelText>
+                  </PanelLine>
+                )}
+
+                {/* x402/MPP Protocol Exchange */}
+                {step.receipt?.x402Flow && step.receipt.x402Flow.length > 0 && (
+                  <div style={{
+                    margin: "4px 0 4px 12px",
+                    padding: "4px 8px",
+                    borderLeft: `2px solid ${TERMINAL_COLORS.teal}40`,
+                    fontSize: "0.85em",
+                  }}>
+                    <PanelLine>
+                      <PanelText color="teal" bold>x402/MPP Protocol:</PanelText>
+                    </PanelLine>
+                    {step.receipt.x402Flow.map((x, xi) => (
+                      <PanelLine key={xi}>
+                        <PanelText color={
+                          x.type === "response_402" ? "orange" :
+                          x.type === "mpp_verify" ? "green" :
+                          x.type === "response_200" ? "green" :
+                          x.type === "payment" ? "teal" :
+                          "dim"
+                        }>
+                          {x.label}
+                        </PanelText>
+                      </PanelLine>
+                    ))}
+                  </div>
+                )}
+
+                <PanelLine>
+                  <PanelText dim>  Cost: </PanelText>
+                  <PanelText color="gold">{step.cost}¤</PanelText>
+                  {step.receipt && (
+                    <PanelText dim> | {step.receipt.receiptId}</PanelText>
+                  )}
+                </PanelLine>
+              </div>
+            );
+          })}
+
+          <PanelSpacer />
+          <PanelLine>
+            <PanelText color={result.success ? "green" : "red"} bold>
+              {result.success ? "✓ MISSION SUCCESS" : "✗ MISSION FAILED"}
+            </PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText color="gold" bold>"{result.headline}"</PanelText>
+          </PanelLine>
+        </TerminalPanel>
+
+        {/* Sidebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <TerminalPanel title="Agent" titleColor="cyan">
+            <PanelLine>
+              <PanelText color="white">{currentMission.agent.emoji} {currentMission.agent.name}</PanelText>
+            </PanelLine>
+            <PanelLine>
+              <PanelText dim>{currentMission.agent.title}</PanelText>
+            </PanelLine>
+            <StatBar label="Morale" value={currentMission.agent.morale} color="green" />
+          </TerminalPanel>
+
+          <TerminalPanel title="Financials" titleColor="gold">
+            <PanelLine>
+              <PanelText dim>Spent: </PanelText>
+              <PanelText color="red">{result.moneySpent}¤</PanelText>
+            </PanelLine>
+            <PanelLine>
+              <PanelText dim>Earned: </PanelText>
+              <PanelText color="green">{result.moneyEarned}¤</PanelText>
+            </PanelLine>
+            <PanelLine>
+              <PanelText dim>Net: </PanelText>
+              <PanelText color={result.netProfit >= 0 ? "green" : "red"} bold>
+                {result.netProfit >= 0 ? "+" : ""}{result.netProfit}¤
+              </PanelText>
+            </PanelLine>
+            {result.reputationChange !== 0 && (
+              <PanelLine>
+                <PanelText dim>Rep: </PanelText>
+                <PanelText color={result.reputationChange > 0 ? "purple" : "orange"}>
+                  {result.reputationChange > 0 ? "+" : ""}{result.reputationChange}
+                </PanelText>
+              </PanelLine>
+            )}
+          </TerminalPanel>
+
+          {currentStep && (
+            <TerminalPanel title="Settlement" titleColor="teal">
+              <PanelLine>
+                <PanelText dim>Mode: </PanelText>
+                <PanelText color={currentStep.settlementMode === "testnet" ? "teal" : "dim"}>
+                  {currentStep.settlementMode}
+                </PanelText>
+              </PanelLine>
+              {currentStep.stellarTxId && (
+                <PanelLine>
+                  <PanelText dim>TX: </PanelText>
+                  <PanelText color="teal">{currentStep.stellarTxId.slice(0, 16)}...</PanelText>
+                </PanelLine>
+              )}
+            </TerminalPanel>
+          )}
+        </div>
+      </PanelGrid>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DAILY REPORT — Summary layout
+// ═══════════════════════════════════════════════════════════════
+
+export function DailyReportLayout({ term }: { term: TerminalState }) {
+  const { state } = useGame();
+  const report = state.dailyReport;
+  if (!report) return null;
+
+  const rep = getReputationTier(state.reputation);
+
+  let hakimComment: string;
+  if (report.netChange > 20) hakimComment = "A magnificent day! The ledger practically glows.";
+  else if (report.netChange > 0) hakimComment = "A profitable day. The ledger smiles upon us.";
+  else if (report.netChange === 0) hakimComment = "We broke even. Not exciting, but not ruinous.";
+  else hakimComment = "Losses today. The bazaar giveth and the bazaar taketh. Mostly taketh.";
+
+  return (
+    <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
+      <PanelGrid columns="1fr 1fr 1fr">
+        <TerminalPanel title="Earned" titleColor="green">
+          <PanelLine>
+            <PanelText color="green" bold>{report.totalEarned}¤</PanelText>
+          </PanelLine>
+        </TerminalPanel>
+        <TerminalPanel title="Spent" titleColor="red">
+          <PanelLine>
+            <PanelText color="red" bold>{report.totalSpent}¤</PanelText>
+          </PanelLine>
+        </TerminalPanel>
+        <TerminalPanel title="Net P&L" titleColor={report.netChange >= 0 ? "green" : "red"}>
+          <PanelLine>
+            <PanelText color={report.netChange >= 0 ? "green" : "red"} bold>
+              {report.netChange >= 0 ? "+" : ""}{report.netChange}¤
+            </PanelText>
+          </PanelLine>
+        </TerminalPanel>
+      </PanelGrid>
+
+      <PanelGrid columns="1fr 280px" style={{ flex: 1 }}>
+        <TerminalPanel title={`Day ${report.day} Report`} titleColor="amber" scroll>
+          <PanelLine>
+            <PanelText color="gold">"{hakimComment}"</PanelText>
+          </PanelLine>
+          <PanelSpacer />
+          <PanelLine>
+            <PanelText dim>Missions run: </PanelText>
+            <PanelText color="white">{report.missionsRun}</PanelText>
+          </PanelLine>
+          <PanelLine>
+            <PanelText dim>Reputation: </PanelText>
+            <PanelText color={report.reputationChange >= 0 ? "purple" : "orange"}>
+              {report.reputationChange >= 0 ? "+" : ""}{report.reputationChange}
+            </PanelText>
+          </PanelLine>
+          <PanelSpacer />
+
+          {report.headlines.map((h, i) => (
+            <PanelLine key={i}>
+              <PanelText dim>• {h}</PanelText>
+            </PanelLine>
+          ))}
+
+          {report.counterpartiesEngaged.length > 0 && (
+            <>
+              <PanelSpacer />
+              <PanelLine>
+                <PanelText dim>Counterparties: </PanelText>
+                <PanelText color="white">{report.counterpartiesEngaged.join(", ")}</PanelText>
+              </PanelLine>
+            </>
+          )}
+        </TerminalPanel>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <TerminalPanel title="Standing" titleColor="purple">
+            <PanelLine>
+              <PanelText dim>Cash: </PanelText>
+              <PanelText color="gold" bold>{state.cash}¤</PanelText>
+            </PanelLine>
+            <PanelLine>
+              <PanelText dim>Rep: </PanelText>
+              <PanelText color="purple">{rep.emoji} {state.reputation}/100 ({rep.name})</PanelText>
+            </PanelLine>
+          </TerminalPanel>
+
+          {report.rumors.length > 0 && (
+            <TerminalPanel title="Intel Gathered" titleColor="orange">
+              {report.rumors.map((r, i) => (
+                <PanelLine key={i}>
+                  <PanelText dim>"{r}"</PanelText>
+                </PanelLine>
+              ))}
+            </TerminalPanel>
+          )}
+        </div>
+      </PanelGrid>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LAYOUT ROUTER — decides which layout to use for each screen
+// ═══════════════════════════════════════════════════════════════
+
+export type PanelScreen = "morning_brief" | "choose_agent" | "resolution_narrative" | "daily_report";
+
+export const PANEL_SCREENS = new Set<string>([
+  "morning_brief",
+  "choose_agent",
+  "resolution_narrative",
+  "daily_report",
+]);
+
+export function ScreenLayout({ term }: { term: TerminalState }) {
+  switch (term.screen) {
+    case "morning_brief":
+      return <MorningBriefLayout term={term} />;
+    case "choose_agent":
+      return <AgentSelectLayout term={term} />;
+    case "resolution_narrative":
+      return <ResolutionLayout term={term} />;
+    case "daily_report":
+      return <DailyReportLayout term={term} />;
+    default:
+      return null;
+  }
+}

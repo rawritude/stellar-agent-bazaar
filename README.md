@@ -54,17 +54,22 @@ Then open [http://localhost:5000](http://localhost:5000) in your browser.
 - **Counterparty mood shifts** between days (cooperative → neutral → hostile → chaotic)
 
 **Settlement & Testnet Readiness**
-- All transactions tagged with **settlement mode** (currently "simulated")
-- **Chain-readiness indicators** on each action type showing which can be backed by Stellar operations:
-  - Trade Execution → Stellar DEX order or path payment
-  - Paid Intel → Stellar micropayment
-  - Permit Filing → On-chain credential issuance
-  - Logistics → Escrow-backed delivery confirmation
+- **Formal settlement adapter layer** (`client/src/lib/settlement/`) with `SettlementAdapter` interface
+- **Simulated adapter** produces receipts with unique IDs, timestamps, fees, and flavor-text memos
+- **Testnet adapter** with real `@stellar/stellar-sdk` integration and `STELLAR_OPERATION_MAP`:
+  - Trade Execution → `manageSellOffer` (Stellar DEX order)
+  - Paid Intel → `payment` (Stellar micropayment) — **canonical first testnet action**
+  - Permit Filing → `manageData` (on-chain credential issuance)
+  - Logistics → `createClaimableBalance` (escrow-backed delivery)
+- **Receipt Ledger tab** — dedicated UI showing all settlement receipts with filters, volume stats, and fee tracking
+- Every `ActionStep` now carries a `SettlementReceipt` with receipt ID, counterparty, amount, fee, memo, and future tx hash
 - **Network stats tracking**: total transactions, counterparties used, settlement breakdown
-- Architecture designed so Stellar testnet calls can replace simulated resolution with minimal refactoring
+- **Stellar Mode toggle** — one click to enable real testnet settlement from the Command Desk
+- **Server-side settlement service** — Express API handles Stellar SDK calls, keeping keys server-side
+- Architecture designed so new Stellar operations can be added per action type
 
 **UI Features**
-- 7-tab interface: Command Desk, Agents, Districts, **Network**, Missions, Reports, Rumors
+- 8-tab interface: Command Desk, Agents, Districts, **Network**, Missions, Reports, **Ledger**, Rumors
 - **Network Route Preview** in Mission Composer shows counterparty routing before dispatch
 - **Interaction Trail** in Reports shows each step with counterparty name, action type, success/failure, and cost
 - **Market Network** panel shows all counterparties, their stats, action badges, and settlement indicators
@@ -84,16 +89,21 @@ All game logic lives in pure TypeScript functions:
 - `client/src/lib/gameData.ts` — Types + initial data. Defines `Agent`, `District`, `MissionTemplate`, `Counterparty`, `ActionType`, `ActionStep`, `SettlementMode`, and the `GameState` shape.
 - `client/src/lib/gameEngine.ts` — Pure functions for mission resolution. Key functions:
   - `findCounterparty()` — Matches action types to available counterparties in a district
-  - `resolveActionStep()` — Simulates a single agent↔counterparty interaction
-  - `resolveSingleMission()` — Resolves a full mission through its action sequence, producing an `ActionStep[]` trail
+  - `resolveActionStep()` — Resolves a single agent↔counterparty interaction and settles through the adapter
+  - `resolveSingleMission()` — Resolves a full mission through its action sequence, producing an `ActionStep[]` trail with receipts
   - `resolveDay()` / `advanceDay()` — Day lifecycle with counterparty state threading
+- `client/src/lib/settlement/` — Settlement adapter layer:
+  - `types.ts` — `SettlementAdapter`, `SettlementRequest`, `SettlementReceipt`, `SettlementResult`
+  - `simulated.ts` — Always-available simulated adapter
+  - `testnet.ts` — Stellar testnet adapter with `STELLAR_OPERATION_MAP`
+  - `index.ts` — Adapter router
 - `client/src/lib/gameContext.tsx` — React context + useReducer for state management
 
 **Adding new content is straightforward:**
 - New counterparty → add to `INITIAL_COUNTERPARTIES` array
 - New action type → add to `ActionType` union + `ACTION_TYPE_INFO` map
 - New mission → add to a district's `availableMissions` with an `actionSequence`
-- Stellar testnet → change `settlementMode` on counterparties from "simulated" to "testnet" and implement the actual Stellar SDK calls in `resolveActionStep()`
+- Stellar testnet → change `settlementMode` on counterparties from "simulated" to "testnet" — the adapter layer handles the rest. Wire real SDK calls in `client/src/lib/settlement/testnet.ts`.
 
 ### Tone
 
@@ -105,7 +115,8 @@ Fantasy flea market meets startup dashboard. Polished UI with ridiculous copy. R
   - `components/MarketNetwork.tsx` — Counterparty network visualization
   - `components/CommandDesk.tsx` — Dashboard with network status widget
   - `components/MissionComposer.tsx` — Mission dispatch with network route preview
-  - `components/DailyReport.tsx` — Reports with interaction trails
+  - `components/DailyReport.tsx` — Reports with interaction trails and receipt IDs
+  - `components/ReceiptLedger.tsx` — Settlement receipt ledger with filters and stats
 - `server/` — Express server (minimal, serves the frontend)
 - `shared/` — Shared TypeScript schemas
 - `docs/` — Design documents and concept docs

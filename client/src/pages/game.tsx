@@ -9,6 +9,7 @@ import { MissionComposer } from "@/components/MissionComposer";
 import { DailyReport } from "@/components/DailyReport";
 import { RumorTicker } from "@/components/RumorTicker";
 import { MarketNetwork } from "@/components/MarketNetwork";
+import { ReceiptLedger } from "@/components/ReceiptLedger";
 import {
   LayoutDashboard,
   Users,
@@ -17,6 +18,7 @@ import {
   FileText,
   Radio,
   Network,
+  BookOpen,
 } from "lucide-react";
 
 export default function GamePage() {
@@ -72,7 +74,7 @@ export default function GamePage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7 h-10" data-testid="tab-list">
+          <TabsList className="grid w-full grid-cols-8 h-10" data-testid="tab-list">
             <TabsTrigger value="command" className="text-xs gap-1.5" data-testid="tab-command">
               <LayoutDashboard className="h-3.5 w-3.5" /> Command
             </TabsTrigger>
@@ -90,6 +92,9 @@ export default function GamePage() {
             </TabsTrigger>
             <TabsTrigger value="reports" className="text-xs gap-1.5" data-testid="tab-reports">
               <FileText className="h-3.5 w-3.5" /> Reports
+            </TabsTrigger>
+            <TabsTrigger value="ledger" className="text-xs gap-1.5" data-testid="tab-ledger">
+              <BookOpen className="h-3.5 w-3.5" /> Ledger
             </TabsTrigger>
             <TabsTrigger value="rumors" className="text-xs gap-1.5" data-testid="tab-rumors">
               <Radio className="h-3.5 w-3.5" /> Rumors
@@ -113,6 +118,9 @@ export default function GamePage() {
           </TabsContent>
           <TabsContent value="reports">
             <DailyReport />
+          </TabsContent>
+          <TabsContent value="ledger">
+            <ReceiptLedger />
           </TabsContent>
           <TabsContent value="rumors">
             <RumorTicker />

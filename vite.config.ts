@@ -23,4 +23,9 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+  test: {
+    globals: true,
+    environment: "node",
+    include: ["../client/src/**/*.test.ts", "../server/**/*.test.ts"],
+  },
 });

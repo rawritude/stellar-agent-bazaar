@@ -53,6 +53,10 @@ export interface Counterparty {
   settlementMode: SettlementMode; // How txns settle (simulated for now)
   mood: "cooperative" | "neutral" | "hostile" | "chaotic";
   interactionCount: number;       // How many times player has dealt with them
+  trust: number;                  // Player trust level: -100 to +100
+  priceModifier: number;          // How trust affects pricing: -0.2 to +0.3
+  lastInteractionDay: number;     // Which day they last dealt with player
+  refusesService: boolean;        // If trust is too low, they refuse
 }
 
 // ── Action Step ──────────────────────────────────────────────
@@ -69,6 +73,38 @@ export interface ActionStep {
   settlementMode: SettlementMode; // How this step settled
   success: boolean;               // Did this step succeed?
   stellarTxId?: string;           // Future: actual Stellar tx hash
+  receipt?: import("./settlement/types").SettlementReceipt; // Settlement receipt
+  scene?: {
+    dialogue: { speaker: string; line: string }[];
+    agent_decision: string;
+    agent_reasoning: string;
+    counterparty_reaction: string;
+    outcome_modifier: number;
+    flavor_detail: string;
+    decision_point?: {
+      prompt: string;
+      option_a: { label: string; risk: number; outcome_modifier: number };
+      option_b: { label: string; risk: number; outcome_modifier: number };
+    };
+  };
+}
+
+// ── Agent Memory & Opinions ─────────────────────────────────
+// Agents remember past interactions and develop preferences.
+
+export interface AgentOpinion {
+  counterpartyId: string;
+  trust: number;           // -100 to +100 — agent's personal feeling
+  reason: string;          // Why they feel this way
+}
+
+export interface AgentMemory {
+  opinions: AgentOpinion[];           // How agent feels about each counterparty
+  refusals: string[];                 // Counterparty IDs agent refuses to work with
+  favoriteDistrict?: string;          // District ID they prefer
+  avoidDistrict?: string;             // District ID they avoid
+  lastMissionDay: number;             // When they last worked
+  personalityShifts: string[];        // Log of how personality changed
 }
 
 export interface Agent {
@@ -80,13 +116,14 @@ export interface Agent {
   description: string;
   quirk: string;
   haggleBonus: number;    // -20 to +30 — affects deal prices
-  scoutBonus: number;     // -20 to +30 — affects intel quality  
+  scoutBonus: number;     // -20 to +30 — affects intel quality
   charmBonus: number;     // -20 to +30 — affects reputation gains
   riskFactor: number;     // 0 to 1 — likelihood of wild outcomes
   costPerMission: number; // base pay
   status: AgentStatus;
   morale: number;         // 0-100
   missionsCompleted: number;
+  memory: AgentMemory;    // Agent's memories and opinions
 }
 
 export interface District {
@@ -145,6 +182,63 @@ export interface MissionResult {
   settlementSummary: SettlementMode; // Overall settlement mode for this mission
 }
 
+// ── Campaign & Events ───────────────────────────────────────
+
+export type CampaignWeek = 1 | 2 | 3 | 4;
+
+export interface ActiveEvent {
+  id: string;
+  name: string;
+  description: string;
+  type: "opportunity" | "crisis" | "rival" | "market_shift" | "story";
+  daysRemaining: number;
+  effects: EventEffect[];
+  sourceRumor?: string;           // Which rumor triggered this event
+}
+
+export interface EventEffect {
+  type: "price_modifier" | "danger_modifier" | "reputation_modifier"
+    | "unlock_mission" | "counterparty_mood" | "agent_morale"
+    | "cash_drain" | "rival_action";
+  target?: string;                // District/counterparty/agent ID
+  value: number;
+  description: string;
+}
+
+export interface CampaignState {
+  week: CampaignWeek;
+  totalDays: number;              // Campaign length (default 30)
+  rivalBrand?: string;            // Rival brand name (appears week 2)
+  rivalReputation: number;        // Rival's reputation
+  rivalCash: number;              // Rival's estimated cash
+  milestones: string[];           // Achieved milestones
+  upkeepPerDay: number;           // Daily cost (rent + agent salaries)
+  isGameOver: boolean;
+  gameOverReason?: string;
+  hasWon: boolean;
+}
+
+// ── Mid-Mission Decision ────────────────────────────────────
+
+export interface MissionDecisionPoint {
+  id: string;
+  stepIndex: number;              // Which action step this interrupts
+  prompt: string;                 // What Hakim asks the player
+  options: MissionDecisionOption[];
+  resolved: boolean;
+  chosenOption?: string;
+}
+
+export interface MissionDecisionOption {
+  id: string;
+  label: string;
+  description: string;
+  riskLevel: number;              // 1-5
+  outcomeModifier: number;        // How this affects the step result
+  moraleCost: number;             // Agent morale impact
+  costModifier: number;           // Budget impact multiplier
+}
+
 export interface GameState {
   day: number;
   cash: number;
@@ -152,14 +246,20 @@ export interface GameState {
   brandName: string;
   agents: Agent[];
   districts: District[];
-  counterparties: Counterparty[];  // NEW: the market network
+  counterparties: Counterparty[];
   activeMissions: ActiveMission[];
   completedMissions: ActiveMission[];
   rumors: string[];
   dayPhase: "morning" | "planning" | "resolution" | "reports";
   eventLog: string[];
   dailyReport?: DailyReport;
-  networkStats: NetworkStats;      // NEW: aggregate network metrics
+  networkStats: NetworkStats;
+  // New systems
+  campaign: CampaignState;
+  activeEvents: ActiveEvent[];
+  pendingDecisions: MissionDecisionPoint[];
+  triggeredRandomEventIds: string[];
+  pendingRandomEvent?: import("../lib/events/randomEvents").RandomEvent;
 }
 
 export interface NetworkStats {
@@ -205,6 +305,7 @@ export const INITIAL_AGENTS: Agent[] = [
     status: "idle",
     morale: 85,
     missionsCompleted: 0,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   },
   {
     id: "auntie-null",
@@ -222,6 +323,7 @@ export const INITIAL_AGENTS: Agent[] = [
     status: "idle",
     morale: 70,
     missionsCompleted: 0,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   },
   {
     id: "ledger-pup",
@@ -239,6 +341,7 @@ export const INITIAL_AGENTS: Agent[] = [
     status: "idle",
     morale: 95,
     missionsCompleted: 0,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   },
   {
     id: "marquis-samples",
@@ -256,6 +359,7 @@ export const INITIAL_AGENTS: Agent[] = [
     status: "idle",
     morale: 100,
     missionsCompleted: 0,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   },
   {
     id: "crow-sigma",
@@ -273,6 +377,7 @@ export const INITIAL_AGENTS: Agent[] = [
     status: "idle",
     morale: 90,
     missionsCompleted: 0,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   },
 ];
 
@@ -301,8 +406,8 @@ export const INITIAL_DISTRICTS: District[] = [
         name: "Premium Goods Negotiation",
         description: "Negotiate bulk purchase of luxury items at the Steps' morning market. High margins, but the merchants are shrewd.",
         type: "trade",
-        baseBudget: 30,
-        baseReward: 55,
+        baseBudget: 35,
+        baseReward: 42,
         riskLevel: 2,
         districtId: "velvet-steps",
         actionSequence: ["negotiation", "trade_execution", "logistics"],
@@ -312,8 +417,8 @@ export const INITIAL_DISTRICTS: District[] = [
         name: "Luxury Brand Campaign",
         description: "Launch a tasteful campaign among the Steps' elite clientele. Expensive, but reputation gains are substantial.",
         type: "branding",
-        baseBudget: 40,
-        baseReward: 25,
+        baseBudget: 35,
+        baseReward: 28,
         riskLevel: 3,
         districtId: "velvet-steps",
         actionSequence: ["permit_filing", "brand_promotion"],
@@ -351,8 +456,8 @@ export const INITIAL_DISTRICTS: District[] = [
         name: "Underground Spice Run",
         description: "Source rare spices at below-market rates. The sellers are reliable-ish. The tunnels are not.",
         type: "trade",
-        baseBudget: 15,
-        baseReward: 40,
+        baseBudget: 20,
+        baseReward: 28,
         riskLevel: 4,
         districtId: "fungal-quarter",
         actionSequence: ["paid_intel", "negotiation", "trade_execution"],
@@ -401,8 +506,8 @@ export const INITIAL_DISTRICTS: District[] = [
         name: "Pop-Up Stall Operation",
         description: "Open a temporary stall during peak foot traffic. Sales potential is enormous if you pick the right pitch.",
         type: "trade",
-        baseBudget: 25,
-        baseReward: 50,
+        baseBudget: 30,
+        baseReward: 38,
         riskLevel: 3,
         districtId: "festival-sprawl",
         actionSequence: ["permit_filing", "trade_execution", "logistics"],
@@ -449,7 +554,7 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     quirk: "Insists on tasting every product personally before agreeing to terms. This takes a while.",
     reliability: 0.85,
     greedFactor: 0.3,
-    districtIds: ["velvet-steps", "festival-sprawl"],
+    districtIds: ["velvet-steps", "festival-sprawl", "fungal-quarter"],
     supportedActions: ["trade_execution", "negotiation"],
     reputation: 78,
     settlementMode: "simulated",
@@ -583,6 +688,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "cooperative",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
 ];
 

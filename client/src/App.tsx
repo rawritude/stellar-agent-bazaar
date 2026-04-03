@@ -5,13 +5,15 @@ import { queryClient } from "@/lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { GameProvider } from "@/lib/gameContext";
 import GamePage from "@/pages/game";
+import TerminalPage from "@/pages/terminal";
 import NotFound from "@/pages/not-found";
 
 function AppRouter() {
   return (
     <Router hook={useHashLocation}>
       <Switch>
-        <Route path="/" component={GamePage} />
+        <Route path="/" component={TerminalPage} />
+        <Route path="/dashboard" component={GamePage} />
         <Route component={NotFound} />
       </Switch>
     </Router>

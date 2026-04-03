@@ -1,10 +1,24 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { createServer as createHttpsServer } from "https";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
 
 const app = express();
-const httpServer = createServer(app);
+
+// Use HTTPS if certs exist (required for WebAuthn on non-localhost)
+const certDir = resolve(import.meta.dirname, "..", "certs");
+const hasSSL = existsSync(resolve(certDir, "key.pem")) && existsSync(resolve(certDir, "cert.pem"));
+
+const httpServer = hasSSL
+  ? createHttpsServer({
+      key: readFileSync(resolve(certDir, "key.pem")),
+      cert: readFileSync(resolve(certDir, "cert.pem")),
+    }, app)
+  : createServer(app);
 
 declare module "http" {
   interface IncomingMessage {
@@ -97,7 +111,8 @@ app.use((req, res, next) => {
       reusePort: true,
     },
     () => {
-      log(`serving on port ${port}`);
+      const proto = hasSSL ? "https" : "http";
+      log(`serving on ${proto}://0.0.0.0:${port}${hasSSL ? " (HTTPS — WebAuthn enabled)" : ""}`);
     },
   );
 })();

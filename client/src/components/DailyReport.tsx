@@ -211,9 +211,16 @@ export function DailyReport() {
                               </div>
                               <p className="text-[10px] text-muted-foreground mt-0.5">{step.description}</p>
                             </div>
-                            <span className="text-[10px] tabular-nums text-muted-foreground shrink-0">
-                              {step.cost}¤
-                            </span>
+                            <div className="text-right shrink-0">
+                              <span className="text-[10px] tabular-nums text-muted-foreground">
+                                {step.cost}¤
+                              </span>
+                              {step.receipt && (
+                                <p className="text-[9px] font-mono text-muted-foreground/60">
+                                  {step.receipt.receiptId}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         );
                       })}

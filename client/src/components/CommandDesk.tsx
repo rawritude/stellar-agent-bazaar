@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useGame } from "@/lib/gameContext";
 import { getReputationTier, getCashTier } from "@/lib/gameEngine";
+import { createLiveTestnetAdapter } from "@/lib/settlement/testnet";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +17,8 @@ import {
   AlertTriangle,
   FileText,
   Network,
+  Wallet,
+  ExternalLink,
 } from "lucide-react";
 
 interface CommandDeskProps {
@@ -22,9 +26,11 @@ interface CommandDeskProps {
 }
 
 export function CommandDesk({ onNavigate }: CommandDeskProps) {
-  const { state, dispatch } = useGame();
+  const { state, dispatch, resolveDayAsync, isResolving, stellarAdapter, setStellarAdapter } = useGame();
   const repTier = getReputationTier(state.reputation);
   const cashTier = getCashTier(state.cash);
+  const [walletInfo, setWalletInfo] = useState<{ publicKey: string; funded: boolean } | null>(null);
+  const [fundingInProgress, setFundingInProgress] = useState(false);
 
   const idleAgents = state.agents.filter(a => a.status === "idle");
   const deployedAgents = state.agents.filter(a => a.status === "deployed");
@@ -62,11 +68,12 @@ export function CommandDesk({ onNavigate }: CommandDeskProps) {
               )}
               {state.dayPhase === "planning" && hasActiveMissions && (
                 <Button
-                  onClick={() => dispatch({ type: "RESOLVE_DAY" })}
+                  onClick={() => resolveDayAsync()}
+                  disabled={isResolving}
                   className="gap-2"
                   data-testid="button-resolve-day"
                 >
-                  <Zap className="h-4 w-4" /> Resolve Day
+                  <Zap className="h-4 w-4" /> {isResolving ? "Resolving..." : "Resolve Day"}
                 </Button>
               )}
               {state.dayPhase === "planning" && !hasActiveMissions && (
@@ -192,7 +199,7 @@ export function CommandDesk({ onNavigate }: CommandDeskProps) {
         </Card>
       </div>
 
-      {/* Network Status + Rumor */}
+      {/* Network Status + Stellar Wallet + Rumor */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Network Status Widget */}
         <Card className="border-dashed border-primary/20" data-testid="card-network-status">
@@ -213,8 +220,10 @@ export function CommandDesk({ onNavigate }: CommandDeskProps) {
               <div>
                 <p className="text-xs text-muted-foreground">Settlement</p>
                 <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Simulated</p>
+                  <div className={`w-1.5 h-1.5 rounded-full ${stellarAdapter ? "bg-teal-500" : "bg-blue-500"}`} />
+                  <p className={`text-xs font-medium ${stellarAdapter ? "text-teal-600 dark:text-teal-400" : "text-blue-600 dark:text-blue-400"}`}>
+                    {stellarAdapter ? "Stellar Testnet" : "Simulated"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -226,18 +235,100 @@ export function CommandDesk({ onNavigate }: CommandDeskProps) {
           </CardContent>
         </Card>
 
-        {/* Quick Rumor Peek */}
-        {state.rumors.length > 0 && (
-          <Card className="border-dashed border-chart-2/30">
-            <CardContent className="py-3 px-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Latest Rumor</p>
-              <p className="text-sm italic" data-testid="text-latest-rumor">
-                🐦‍⬛ "{state.rumors[state.rumors.length - 1]}"
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Stellar Wallet Widget */}
+        <Card className={`border-dashed ${stellarAdapter ? "border-teal-500/40" : "border-primary/20"}`} data-testid="card-stellar-wallet">
+          <CardContent className="py-3 px-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Wallet className="h-3.5 w-3.5 text-teal-500" />
+              <p className="text-xs font-medium uppercase tracking-wider">Stellar Testnet Wallet</p>
+            </div>
+            {!stellarAdapter ? (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Enable Stellar testnet to settle actions with real transactions.
+                  Paid intel, trades, permits, and logistics will execute on-chain.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs"
+                  disabled={fundingInProgress}
+                  onClick={async () => {
+                    setFundingInProgress(true);
+                    try {
+                      // Fetch wallet info
+                      const infoRes = await fetch("/api/wallet");
+                      const info = await infoRes.json();
+                      // Fund wallet
+                      const fundRes = await fetch("/api/wallet/fund", { method: "POST" });
+                      const fundResult = await fundRes.json();
+                      if (fundResult.success) {
+                        setWalletInfo({ publicKey: info.publicKey, funded: true });
+                        setStellarAdapter(createLiveTestnetAdapter());
+                      }
+                    } catch (err) {
+                      console.error("Failed to enable Stellar mode:", err);
+                    } finally {
+                      setFundingInProgress(false);
+                    }
+                  }}
+                  data-testid="button-enable-stellar"
+                >
+                  <Zap className="h-3 w-3" />
+                  {fundingInProgress ? "Connecting..." : "Enable Stellar Testnet"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
+                  <span className="text-xs font-medium text-teal-600 dark:text-teal-400">Connected to Stellar Testnet</span>
+                </div>
+                {walletInfo && (
+                  <p className="text-[10px] font-mono text-muted-foreground truncate">
+                    {walletInfo.publicKey}
+                  </p>
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-1 text-[10px] h-6 px-2"
+                    onClick={() => {
+                      setStellarAdapter(null);
+                      setWalletInfo(null);
+                    }}
+                  >
+                    Disconnect
+                  </Button>
+                  {walletInfo && (
+                    <a
+                      href={`https://stellar.expert/explorer/testnet/account/${walletInfo.publicKey}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] text-teal-600 dark:text-teal-400 flex items-center gap-0.5 hover:underline"
+                    >
+                      <ExternalLink className="h-2.5 w-2.5" /> Explorer
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Quick Rumor */}
+      {state.rumors.length > 0 && (
+        <Card className="border-dashed border-chart-2/30">
+          <CardContent className="py-3 px-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Latest Rumor</p>
+            <p className="text-sm italic" data-testid="text-latest-rumor">
+              🐦‍⬛ "{state.rumors[state.rumors.length - 1]}"
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Daily Report Summary (when in reports phase) */}
       {state.dayPhase === "reports" && state.dailyReport && (
