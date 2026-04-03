@@ -123,8 +123,23 @@ export function blank(): TerminalLine {
   return { spans: [], blank: true };
 }
 
-export function title(text: string, color: TerminalColor = "gold", size: string = "1.4em", glow: boolean = true): TerminalLine {
-  return { spans: [], cssTitle: { text, color, size, glow } };
+/**
+ * CSS-styled title (for subtitles, labels, small headings).
+ * For big terminal-style titles, use figletTitle() instead.
+ */
+export function title(text: string, color: TerminalColor = "gold", size: string = "1.1em", glow: boolean = true): TerminalLine {
+  return { spans: [], centered: true, cssTitle: { text, color, size, glow } };
+}
+
+/**
+ * Generate a figlet-style ASCII art title. These look terminal-native.
+ * Uses pre-rendered text (call generateFiglet on the server or at build time).
+ */
+export function figletLines(asciiText: string, color: TerminalColor = "gold"): TerminalLine[] {
+  return asciiText.split("\n").filter(l => l.trim()).map(l => ({
+    spans: [{ text: l, color }],
+    centered: true,
+  }));
 }
 
 export function divider(color: TerminalColor = "dim", style: "solid" | "dashed" | "dotted" = "solid"): TerminalLine {

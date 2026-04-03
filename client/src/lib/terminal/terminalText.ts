@@ -1,4 +1,4 @@
-import { line, span, blank, indented, title, divider, type TerminalLine, type TerminalChoice } from "./terminalTypes";
+import { line, span, blank, indented, title, divider, figletLines, type TerminalLine, type TerminalChoice } from "./terminalTypes";
 import type { GameState, Agent, District, MissionTemplate, ActiveMission, Counterparty, ActionStep } from "../gameData";
 import { ACTION_TYPE_INFO } from "../gameData";
 import { getReputationTier, getCashTier } from "../gameEngine";
@@ -12,14 +12,22 @@ import {
 // ASCII ART
 // ===============================================================
 
+// Pre-rendered figlet title (Slant font) — looks terminal-native
+const TITLE_FIGLET = `  ________            ____
+ /_  __/ /_  ___     / __ )____ _____  ____ _____ ______
+  / / / __ \\/ _ \\   / __  / __ \`/_  / / __ \`/ __ \`/ ___/
+ / / / / / /  __/  / /_/ / /_/ / / /_/ /_/ / /_/ / /
+/_/ /_/ /_/\\___/  /_____/\\__,_/ /___/\\__,_/\\__,_/_/`;
+
 export const SPLASH_ART: TerminalLine[] = [
   blank(),
   ...renderBazaarEntrance(),
   blank(),
-  title("The Velvet Ledger Bazaar", "gold", "1.8em", true),
+  ...figletLines(TITLE_FIGLET, "gold"),
   blank(),
-  title("Spice lanes. Shady deals. Cosmic ledgers.", "dim", "0.9em", false),
-  title("Agents in tiny waistcoats. Merchants with grudges.", "dim", "0.85em", false),
+  title("The Velvet Ledger", "amber", "0.9em", false),
+  blank(),
+  title("Spice lanes · Shady deals · Cosmic ledgers", "dim", "0.85em", false),
   blank(),
 ];
 
