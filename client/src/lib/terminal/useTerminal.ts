@@ -52,24 +52,20 @@ export function useTerminal() {
           break;
         }
         case "RESOLVE_DAY":
-          resolveDayAsync().then(() => {
-            setTerm(prev => {
-              const { state: resolved } = transition(prev, game, "RESOLVE_COMPLETE");
-              return resolved;
-            });
-          }).catch(err => {
+          // Don't handle the result here — the useEffect watching
+          // game.dayPhase === "reports" will trigger RESOLVE_COMPLETE
+          // with the FRESH game state (not the stale closure).
+          resolveDayAsync().catch(err => {
             console.error("[resolve] Day resolution failed:", err);
-            // Show error in terminal instead of crashing
             setTerm(prev => ({
               ...prev,
               lines: [
                 { spans: [{ text: "" }], blank: true },
-                { spans: [{ text: "  Resolution failed: " + err.message, color: "red" }] },
-                { spans: [{ text: "  Check browser console for details.", color: "dim" as any }] },
+                { spans: [{ text: "  Resolution failed: " + err.message, color: "red" as any }] },
                 { spans: [{ text: "" }], blank: true },
               ],
               choices: [{ key: "enter", label: "Return to planning...", action: "BACK" }],
-              screen: "dispatch_more" as any,
+              screen: "morning_brief" as any,
             }));
           });
           break;

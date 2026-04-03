@@ -1019,7 +1019,14 @@ export function buildMissionNarrative(mission: ActiveMission): TerminalLine[] {
 }
 
 export function buildDailyReport(state: GameState): TerminalLine[] {
-  const report = state.dailyReport!;
+  const report = state.dailyReport;
+  if (!report) {
+    return [
+      blank(),
+      line(span("  No report available for this day.", "dim")),
+      blank(),
+    ];
+  }
 
   const lines: TerminalLine[] = [
     blank(),
