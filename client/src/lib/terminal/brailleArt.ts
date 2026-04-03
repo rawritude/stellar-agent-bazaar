@@ -373,90 +373,122 @@ export function renderHandshake(): TerminalLine[] {
  * ~55 chars wide, ~12 lines tall in braille
  */
 export function renderBazaarEntrance(): TerminalLine[] {
-  const w = 110, h = 48;
+  const w = 160, h = 72;
   const px = createCanvas(w, h);
 
-  // Sky stars
-  const stars = [[8, 2], [20, 1], [35, 3], [50, 1], [70, 2], [5, 4], [95, 3],
-    [85, 1], [15, 5], [65, 4], [100, 2], [45, 2], [78, 5], [30, 0], [90, 0]];
+  // Sky stars — scattered across the sky
+  const stars = [
+    [10, 2], [30, 1], [50, 3], [70, 1], [100, 2], [8, 5], [140, 3],
+    [120, 1], [22, 6], [95, 5], [150, 2], [60, 2], [110, 4], [42, 0],
+    [130, 0], [5, 8], [155, 6], [75, 4], [88, 1], [115, 6], [35, 8],
+  ];
   stars.forEach(([x, y]) => drawDot(px, x, y));
 
-  // Crescent moon
-  drawArc(px, 55, 4, 5, Math.PI * 0.2, Math.PI * 1.8);
-  drawArc(px, 57, 4, 4, Math.PI * 0.2, Math.PI * 1.5);
+  // Crescent moon (larger)
+  drawArc(px, 80, 5, 8, Math.PI * 0.2, Math.PI * 1.8);
+  drawArc(px, 83, 5, 6, Math.PI * 0.2, Math.PI * 1.5);
 
   // Central large dome
-  drawArc(px, 55, 20, 22, Math.PI, Math.PI * 2);
-  drawLine(px, 33, 20, 77, 20); // dome base
+  drawArc(px, 80, 30, 34, Math.PI, Math.PI * 2);
+  drawLine(px, 46, 30, 114, 30);
 
   // Smaller side domes
-  drawArc(px, 30, 18, 10, Math.PI, Math.PI * 2);
-  drawArc(px, 80, 18, 10, Math.PI, Math.PI * 2);
+  drawArc(px, 42, 28, 16, Math.PI, Math.PI * 2);
+  drawArc(px, 118, 28, 16, Math.PI, Math.PI * 2);
 
-  // Left minaret
-  drawRect(px, 10, 10, 8, 36);
-  drawArc(px, 14, 10, 4, Math.PI, Math.PI * 2);
-  drawDot(px, 14, 5); // finial
-  // Minaret details
-  drawLine(px, 10, 20, 18, 20);
-  drawLine(px, 10, 30, 18, 30);
+  // Left minaret (tall)
+  drawRect(px, 12, 14, 12, 54);
+  drawArc(px, 18, 14, 6, Math.PI, Math.PI * 2);
+  drawDot(px, 18, 6); // finial
+  drawDot(px, 18, 7);
+  // Minaret balconies
+  drawLine(px, 8, 28, 26, 28);
+  drawLine(px, 8, 44, 26, 44);
+  // Minaret windows
+  drawArc(px, 18, 34, 3, Math.PI, Math.PI * 2);
+  drawArc(px, 18, 50, 3, Math.PI, Math.PI * 2);
 
   // Right minaret
-  drawRect(px, 92, 10, 8, 36);
-  drawArc(px, 96, 10, 4, Math.PI, Math.PI * 2);
-  drawDot(px, 96, 5); // finial
-  drawLine(px, 92, 20, 100, 20);
-  drawLine(px, 92, 30, 100, 30);
+  drawRect(px, 136, 14, 12, 54);
+  drawArc(px, 142, 14, 6, Math.PI, Math.PI * 2);
+  drawDot(px, 142, 6);
+  drawDot(px, 142, 7);
+  drawLine(px, 132, 28, 150, 28);
+  drawLine(px, 132, 44, 150, 44);
+  drawArc(px, 142, 34, 3, Math.PI, Math.PI * 2);
+  drawArc(px, 142, 50, 3, Math.PI, Math.PI * 2);
 
-  // Main walls
-  drawLine(px, 20, 18, 20, 46);
-  drawLine(px, 90, 18, 90, 46);
+  // Main building walls
+  drawLine(px, 26, 28, 26, 68);
+  drawLine(px, 134, 28, 134, 68);
 
-  // Grand doorway arch
-  drawArc(px, 55, 32, 10, Math.PI, Math.PI * 2);
-  drawLine(px, 45, 32, 45, 46);
-  drawLine(px, 65, 32, 65, 46);
+  // Grand doorway (large pointed arch)
+  drawArc(px, 80, 48, 14, Math.PI, Math.PI * 2);
+  drawLine(px, 66, 48, 66, 68);
+  drawLine(px, 94, 48, 68, 68);
+  // Inner arch detail
+  drawArc(px, 80, 50, 10, Math.PI, Math.PI * 2);
 
-  // Window arches (left)
-  drawArc(px, 30, 26, 4, Math.PI, Math.PI * 2);
-  drawLine(px, 26, 26, 26, 32);
-  drawLine(px, 34, 26, 34, 32);
+  // Window arches (left side, two)
+  drawArc(px, 40, 38, 6, Math.PI, Math.PI * 2);
+  drawLine(px, 34, 38, 34, 48);
+  drawLine(px, 46, 38, 46, 48);
+  drawArc(px, 55, 38, 6, Math.PI, Math.PI * 2);
+  drawLine(px, 49, 38, 49, 48);
+  drawLine(px, 61, 38, 61, 48);
 
-  // Window arches (right)
-  drawArc(px, 80, 26, 4, Math.PI, Math.PI * 2);
-  drawLine(px, 76, 26, 76, 32);
-  drawLine(px, 84, 26, 84, 32);
+  // Window arches (right side, two)
+  drawArc(px, 105, 38, 6, Math.PI, Math.PI * 2);
+  drawLine(px, 99, 38, 99, 48);
+  drawLine(px, 111, 38, 111, 48);
+  drawArc(px, 120, 38, 6, Math.PI, Math.PI * 2);
+  drawLine(px, 114, 38, 114, 48);
+  drawLine(px, 126, 38, 126, 48);
 
-  // Decorative band
-  drawLine(px, 20, 38, 90, 38);
-  for (let x = 22; x < 90; x += 6) {
-    drawDot(px, x, 37);
-    drawDot(px, x + 3, 39);
+  // Decorative band across building
+  drawLine(px, 26, 56, 134, 56);
+  for (let x = 28; x < 134; x += 8) {
+    drawDot(px, x, 55);
+    drawDot(px, x + 4, 57);
   }
 
   // Ground/street
-  drawLine(px, 0, 46, 110, 46);
+  drawLine(px, 0, 68, 160, 68);
 
-  // Market stalls in foreground
-  drawLine(px, 2, 40, 16, 40);
-  drawLine(px, 2, 40, 2, 46);
-  drawLine(px, 16, 40, 16, 46);
-  drawCircle(px, 6, 43, 2); // goods
-  drawCircle(px, 12, 43, 2);
+  // Left market stall
+  drawLine(px, 2, 58, 22, 58); // awning
+  drawLine(px, 0, 56, 2, 58);
+  drawLine(px, 24, 56, 22, 58);
+  drawRect(px, 2, 58, 20, 10);
+  drawCircle(px, 8, 63, 3);
+  drawCircle(px, 16, 63, 3);
 
-  drawLine(px, 94, 40, 108, 40);
-  drawLine(px, 94, 40, 94, 46);
-  drawLine(px, 108, 40, 108, 46);
-  drawCircle(px, 98, 43, 2);
-  drawCircle(px, 104, 43, 2);
+  // Right market stall
+  drawLine(px, 138, 58, 158, 58);
+  drawLine(px, 136, 56, 138, 58);
+  drawLine(px, 160, 56, 158, 58);
+  drawRect(px, 138, 58, 20, 10);
+  drawCircle(px, 144, 63, 3);
+  drawCircle(px, 152, 63, 3);
 
   // Hanging lanterns
-  drawLine(px, 38, 15, 38, 18);
-  drawCircle(px, 38, 19, 1);
-  drawLine(px, 72, 15, 72, 18);
-  drawCircle(px, 72, 19, 1);
+  drawLine(px, 55, 22, 55, 26);
+  drawCircle(px, 55, 27, 2);
+  drawDot(px, 55, 27);
+  drawLine(px, 105, 22, 105, 26);
+  drawCircle(px, 105, 27, 2);
+  drawDot(px, 105, 27);
 
-  return pixelsToLines(px, "gold", 2);
+  // People in the street (simple figures)
+  // Figure 1
+  drawCircle(px, 32, 62, 2);
+  drawLine(px, 32, 64, 32, 68);
+  // Figure 2
+  drawCircle(px, 128, 60, 2);
+  drawLine(px, 128, 62, 128, 68);
+  drawLine(px, 126, 64, 130, 64);
+
+  return pixelsToLines(px, "gold", 0);
 }
 
 /**
@@ -498,75 +530,94 @@ export function renderTrophy(): TerminalLine[] {
 
 /**
  * A large djinn figure emerging from smoke (Hakim).
- * ~40 chars wide, ~12 lines tall in braille
+ * Full-width, ~16 lines tall in braille
  */
 export function renderDjinn(): TerminalLine[] {
-  const w = 80, h = 48;
+  const w = 120, h = 64;
   const px = createCanvas(w, h);
 
-  // Stars around
-  const stars = [[5, 2], [75, 3], [8, 8], [72, 6], [3, 16], [77, 20],
-    [10, 24], [70, 22], [5, 30], [75, 32]];
+  // Stars scattered around the figure
+  const stars = [
+    [8, 3], [112, 4], [12, 12], [108, 10], [5, 24], [115, 28],
+    [15, 36], [105, 34], [8, 44], [112, 48], [20, 8], [100, 6],
+    [4, 50], [116, 52],
+  ];
   stars.forEach(([x, y]) => drawDot(px, x, y));
 
   // Turban (large, ornate)
-  drawArc(px, 40, 6, 10, Math.PI, Math.PI * 2);
-  drawCircle(px, 40, 8, 8);
+  drawArc(px, 60, 8, 16, Math.PI, Math.PI * 2);
+  drawCircle(px, 60, 12, 12);
+  // Turban wrap details
+  drawArc(px, 60, 6, 18, Math.PI * 1.1, Math.PI * 1.9);
   // Jewel on turban
-  drawStar(px, 40, 3, 3);
+  drawStar(px, 60, 3, 5);
 
   // Face
-  drawCircle(px, 40, 14, 7);
-  // Eyes
-  drawDot(px, 36, 13);
-  drawDot(px, 37, 13);
-  drawDot(px, 43, 13);
-  drawDot(px, 44, 13);
+  drawCircle(px, 60, 22, 10);
+  // Eyes (wider set)
+  drawDot(px, 54, 20);
+  drawDot(px, 55, 20);
+  drawDot(px, 56, 20);
+  drawDot(px, 64, 20);
+  drawDot(px, 65, 20);
+  drawDot(px, 66, 20);
   // Nose
-  drawDot(px, 40, 15);
-  // Beard
-  drawLine(px, 35, 18, 40, 24);
-  drawLine(px, 45, 18, 40, 24);
-  drawLine(px, 37, 20, 40, 26);
-  drawLine(px, 43, 20, 40, 26);
+  drawDot(px, 60, 23);
+  drawDot(px, 60, 24);
+  // Mouth/smile
+  drawArc(px, 60, 26, 4, 0, Math.PI);
+
+  // Beard (flowing)
+  drawLine(px, 52, 28, 60, 38);
+  drawLine(px, 68, 28, 60, 38);
+  drawLine(px, 55, 30, 60, 40);
+  drawLine(px, 65, 30, 60, 40);
+  drawLine(px, 57, 32, 60, 42);
+  drawLine(px, 63, 32, 60, 42);
 
   // Shoulders and robes
-  drawLine(px, 30, 20, 40, 18);
-  drawLine(px, 50, 20, 40, 18);
+  drawLine(px, 44, 30, 60, 28);
+  drawLine(px, 76, 30, 60, 28);
 
-  // Robe body (flowing)
-  drawLine(px, 26, 22, 30, 20);
-  drawLine(px, 54, 22, 50, 20);
-  drawLine(px, 22, 32, 26, 22);
-  drawLine(px, 58, 32, 54, 22);
+  // Robe body (flowing, wide)
+  drawLine(px, 38, 34, 44, 30);
+  drawLine(px, 82, 34, 76, 30);
+  drawLine(px, 30, 48, 38, 34);
+  drawLine(px, 90, 48, 82, 34);
 
   // Arms outstretched
-  drawLine(px, 26, 22, 14, 28);
-  drawLine(px, 54, 22, 66, 28);
+  drawLine(px, 38, 34, 18, 42);
+  drawLine(px, 82, 34, 102, 42);
 
   // Hands holding glowing orbs
-  drawCircle(px, 12, 27, 3);
-  drawDot(px, 12, 27);
-  drawCircle(px, 68, 27, 3);
-  drawDot(px, 68, 27);
+  drawCircle(px, 16, 41, 5);
+  drawDot(px, 16, 41);
+  drawStar(px, 16, 41, 3);
+  drawCircle(px, 104, 41, 5);
+  drawDot(px, 104, 41);
+  drawStar(px, 104, 41, 3);
 
-  // Robe dissolving into smoke
-  drawArc(px, 30, 36, 6, Math.PI * 0.3, Math.PI * 0.7);
-  drawArc(px, 50, 36, 6, Math.PI * 0.3, Math.PI * 0.7);
-  drawArc(px, 40, 38, 10, Math.PI * 0.2, Math.PI * 0.8);
-  drawArc(px, 35, 40, 5, Math.PI * 0.3, Math.PI * 0.7);
-  drawArc(px, 45, 40, 5, Math.PI * 0.3, Math.PI * 0.7);
-  drawArc(px, 40, 42, 8, Math.PI * 0.3, Math.PI * 0.7);
-  drawArc(px, 40, 44, 12, Math.PI * 0.3, Math.PI * 0.7);
+  // Robe dissolving into smoke (multiple layers)
+  drawArc(px, 44, 52, 8, Math.PI * 0.2, Math.PI * 0.8);
+  drawArc(px, 76, 52, 8, Math.PI * 0.2, Math.PI * 0.8);
+  drawArc(px, 60, 54, 14, Math.PI * 0.15, Math.PI * 0.85);
+  drawArc(px, 50, 56, 6, Math.PI * 0.3, Math.PI * 0.7);
+  drawArc(px, 70, 56, 6, Math.PI * 0.3, Math.PI * 0.7);
+  drawArc(px, 60, 58, 18, Math.PI * 0.2, Math.PI * 0.8);
+  drawArc(px, 55, 60, 8, Math.PI * 0.3, Math.PI * 0.7);
+  drawArc(px, 65, 60, 8, Math.PI * 0.3, Math.PI * 0.7);
+  drawArc(px, 60, 62, 22, Math.PI * 0.25, Math.PI * 0.75);
 
-  // Robe patterns
-  drawLine(px, 32, 24, 32, 34);
-  drawLine(px, 48, 24, 48, 34);
-  drawDot(px, 36, 28);
-  drawDot(px, 44, 28);
-  drawDot(px, 40, 30);
+  // Robe inner patterns (geometric)
+  drawLine(px, 48, 36, 48, 50);
+  drawLine(px, 72, 36, 72, 50);
+  drawDot(px, 54, 40);
+  drawDot(px, 66, 40);
+  drawDot(px, 60, 44);
+  drawDot(px, 54, 48);
+  drawDot(px, 66, 48);
 
-  return pixelsToLines(px, "amber", 4);
+  return pixelsToLines(px, "amber", 0);
 }
 
 /**
