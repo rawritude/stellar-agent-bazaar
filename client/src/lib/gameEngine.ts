@@ -55,7 +55,7 @@ function generateId(): string {
 export function createInitialState(brandName: string = "The Velvet Ledger"): GameState {
   return {
     day: 1,
-    cash: 100,
+    cash: 120,
     reputation: 25,
     brandName,
     agents: INITIAL_AGENTS.map(a => ({ ...a, memory: { ...a.memory, opinions: [], refusals: [], personalityShifts: [] } })),
@@ -88,7 +88,7 @@ export function createInitialState(brandName: string = "The Velvet Ledger"): Gam
       rivalReputation: 0,
       rivalCash: 0,
       milestones: [],
-      upkeepPerDay: 8,
+      upkeepPerDay: 6,
       isGameOver: false,
       hasWon: false,
     },
@@ -754,7 +754,7 @@ export function advanceDay(state: GameState): GameState {
     ...defaultCampaign,
     ...state.campaign,
     week,
-    upkeepPerDay: 8 + (week - 1) * 2,
+    upkeepPerDay: 6 + (week - 1) * 1, // 6, 7, 8, 9 per week (gentler curve)
   };
 
   // Add rival in week 2
@@ -781,14 +781,14 @@ export function advanceDay(state: GameState): GameState {
 
   // 9. Reputation naturally decays (-1/day) — you must actively maintain it
   let repPenalty = -1;
-  if (upkeep.cash <= 0) repPenalty = -5;
+  if (upkeep.cash <= 0) repPenalty = -2; // softer penalty when broke
   newLogs.push("Reputation fades slightly without active marketing (-1)");
 
   // 10. Comeback mechanic: emergency patron loan when broke
-  if (upkeep.cash <= 0 && state.reputation >= 15) {
-    upkeep.cash = 25; // Emergency funds
-    repPenalty -= 8; // Costs reputation
-    newLogs.push("EMERGENCY: A mysterious patron offers 25¤... at the cost of your reputation (-8)");
+  if (upkeep.cash <= 0 && state.reputation >= 10) {
+    upkeep.cash = 30; // Emergency funds (enough for one cheap mission)
+    repPenalty -= 5; // Costs reputation (less punishing)
+    newLogs.push("EMERGENCY: A mysterious patron offers 30¤... at the cost of your reputation (-5)");
   }
 
   // 11. Roll for a random event (Slay the Spire-style)

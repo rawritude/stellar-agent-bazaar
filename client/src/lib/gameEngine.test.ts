@@ -27,7 +27,7 @@ describe("gameEngine baseline", () => {
     const state = createInitialState("Test Brand");
     expect(state.brandName).toBe("Test Brand");
     expect(state.day).toBe(1);
-    expect(state.cash).toBe(100);
+    expect(state.cash).toBe(120);
     expect(state.agents.length).toBe(5);
     expect(state.districts.length).toBe(3);
     expect(state.counterparties.length).toBe(9);
