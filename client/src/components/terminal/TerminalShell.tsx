@@ -24,6 +24,35 @@ function TerminalLineView({
     return <div style={{ height: "1.4em" }} />;
   }
 
+  // CSS-rendered title (no character alignment needed)
+  if (line.cssTitle) {
+    const { text, color, size, glow } = line.cssTitle;
+    return (
+      <div style={{
+        fontSize: size || "1.4em",
+        fontWeight: "bold",
+        color: TERMINAL_COLORS[color],
+        textAlign: "center",
+        padding: "4px 0",
+        textShadow: glow ? `0 0 10px ${TERMINAL_COLORS[color]}60, 0 0 20px ${TERMINAL_COLORS[color]}30` : undefined,
+        letterSpacing: "0.15em",
+      }}>
+        {text}
+      </div>
+    );
+  }
+
+  // CSS-rendered divider (clean, no characters)
+  if (line.cssDivider) {
+    const { color, style } = line.cssDivider;
+    return (
+      <div style={{
+        borderTop: `1px ${style || "solid"} ${TERMINAL_COLORS[color]}40`,
+        margin: "8px 20px",
+      }} />
+    );
+  }
+
   // Check if this line should be hidden by a reveal animation
   if (animManager) {
     const revealCount = animManager.getRevealCount(lineIndex);
@@ -600,6 +629,8 @@ export function TerminalShell() {
         flexDirection: "column",
         outline: "none",
         overflow: "hidden",
+        // CRT vignette effect
+        boxShadow: `inset 0 0 120px rgba(0,0,0,0.4)`,
       }}
     >
       <StatusBar screen={term.screen} />

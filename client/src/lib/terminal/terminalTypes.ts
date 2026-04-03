@@ -23,6 +23,9 @@ export interface TerminalLine {
   spans: TerminalSpan[];
   indent?: number;
   blank?: boolean;
+  // CSS-rendered elements (bypass character rendering)
+  cssTitle?: { text: string; color: TerminalColor; size?: string; glow?: boolean };
+  cssDivider?: { color: TerminalColor; style?: "solid" | "dashed" | "dotted" };
 }
 
 export interface TerminalChoice {
@@ -117,6 +120,14 @@ export function span(text: string, color?: TerminalColor, bold?: boolean): Termi
 
 export function blank(): TerminalLine {
   return { spans: [], blank: true };
+}
+
+export function title(text: string, color: TerminalColor = "gold", size: string = "1.4em", glow: boolean = true): TerminalLine {
+  return { spans: [], cssTitle: { text, color, size, glow } };
+}
+
+export function divider(color: TerminalColor = "dim", style: "solid" | "dashed" | "dotted" = "solid"): TerminalLine {
+  return { spans: [], cssDivider: { color, style } };
 }
 
 export function indented(indent: number, ...spans: (string | TerminalSpan)[]): TerminalLine {

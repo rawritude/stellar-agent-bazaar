@@ -1,4 +1,4 @@
-import { line, span, blank, indented, type TerminalLine, type TerminalChoice } from "./terminalTypes";
+import { line, span, blank, indented, title, divider, type TerminalLine, type TerminalChoice } from "./terminalTypes";
 import type { GameState, Agent, District, MissionTemplate, ActiveMission, Counterparty, ActionStep } from "../gameData";
 import { ACTION_TYPE_INFO } from "../gameData";
 import { getReputationTier, getCashTier } from "../gameEngine";
@@ -16,9 +16,7 @@ export const SPLASH_ART: TerminalLine[] = [
   blank(),
   ...renderBazaarEntrance(),
   blank(),
-  line(span("", "gold")),
-  line(span("    |", "gold"), span("          T H E    V E L V E T    L E D G E R    B A Z A A R           ", "gold", true)),
-  line(span("", "gold")),
+  title("The Velvet Ledger Bazaar", "gold", "1.8em", true),
   blank(),
   line(span("             Spice lanes. Shady deals. Cosmic ledgers.", "dim")),
   line(span("          Agents in tiny waistcoats. Merchants with grudges.", "dim")),
@@ -26,26 +24,22 @@ export const SPLASH_ART: TerminalLine[] = [
 ];
 
 export const DIVIDER: TerminalLine[] = [
-  line(span("  ===========================================", "dim")),
+  divider("dim"),
 ];
 
 export const ORNAMENTAL_DIVIDER: TerminalLine[] = [
-  line(
-    span("  ◆---------------", "gold"),
-    span("◇", "amber"),
-    span("---------------◆", "gold"),
-  ),
+  divider("gold"),
 ];
 
 export const THIN_DIVIDER: TerminalLine[] = [
-  line(span("  -----------------------------------------", "dim")),
+  divider("dim", "dashed"),
 ];
 
 const HAKIM_PORTRAIT: TerminalLine[] = [
   ...renderDjinn(),
   blank(),
-  line(span("             H A K I M", "gold", true)),
-  line(span("          the Ledger-Keeper", "amber")),
+  title("Hakim", "gold", "1.6em", true),
+  title("the Ledger-Keeper", "amber", "1em", false),
   blank(),
   line(span("     Keeper of Receipts. Counter of Coins.", "dim")),
   line(span("     Witness to Every Deal in the Bazaar.", "dim")),
@@ -168,7 +162,7 @@ const WALLET_ART: TerminalLine[] = [
   ...renderLedger(),
   blank(),
   line(span("", "teal")),
-  line(span("    |   T H E   C O S M I C   L E D G E R   |", "teal", true)),
+  title("The Cosmic Ledger", "teal", "1.4em", true),
   line(span("", "teal")),
   blank(),
   line(span("       Where every transaction is written", "dim")),
@@ -247,7 +241,7 @@ export const CHAMPIONSHIP_WIN_ART: TerminalLine[] = [
   blank(),
   line(span("   ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦", "gold")),
   blank(),
-  line(span("     G R A N D   B A Z A A R   C H A M P I O N", "gold", true)),
+  title("Grand Bazaar Champion", "gold", "1.8em", true),
   blank(),
 ];
 
@@ -269,7 +263,7 @@ export const BANKRUPTCY_ART: TerminalLine[] = [
   line(span("    |                                   |", "red")),
   line(span("", "red")),
   blank(),
-  line(span("            B A N K R U P T", "red", true)),
+  title("Bankrupt", "red", "1.6em", true),
   blank(),
 ];
 
@@ -1192,7 +1186,7 @@ const STELLAR_ART: TerminalLine[] = [
   blank(),
   line(span("", "teal")),
   line(span("    |                                   |", "teal")),
-  line(span("    |     ✦   S T E L L A R   ✦        |", "teal", true)),
+  title("✦ Stellar ✦", "teal", "1.4em", true),
   line(span("    |       N E T W O R K              |", "teal")),
   line(span("    |                                   |", "teal")),
   line(span("    |   ◇ --- ◆ --- ◇ --- ◆ --- ◇     |", "teal")),
