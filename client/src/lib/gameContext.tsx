@@ -25,7 +25,9 @@ type GameAction =
   | { type: "SET_AGENTS"; agents: Agent[] }
   | { type: "LOAD_GAME"; savedState: GameState }
   | { type: "APPLY_EVENT_EFFECTS"; effects: { type: string; value: number; target?: string }[] }
-  | { type: "CLEAR_PENDING_EVENT" };
+  | { type: "CLEAR_PENDING_EVENT" }
+  | { type: "PURCHASE_ITEM"; itemId: string }
+  | { type: "APPLY_QUEST_REWARD"; agentId: string; questName: string };
 
 function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
@@ -106,6 +108,66 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           ...state.campaign,
           upkeepPerDay: (state.campaign?.upkeepPerDay ?? 8) + upkeepMod,
         } : state.campaign,
+      };
+    }
+    case "PURCHASE_ITEM": {
+      const shop = (state.campaign?.shop ?? []).map(item => {
+        if (item.id !== action.itemId) return item;
+        return { ...item, purchased: true };
+      });
+      const item = shop.find(i => i.id === action.itemId);
+      if (!item) return state;
+
+      let newCash = state.cash - item.cost;
+      let newRep = state.reputation;
+      const agents = state.agents.map(a => ({ ...a }));
+
+      // Apply immediate effects
+      switch (item.effect.type) {
+        case "morale_boost":
+          agents.forEach(a => { a.morale = Math.min(100, a.morale + item.effect.value); });
+          break;
+        case "rep_boost":
+          newRep = Math.min(100, newRep + item.effect.value);
+          break;
+      }
+
+      return {
+        ...state,
+        cash: newCash,
+        reputation: newRep,
+        agents,
+        campaign: { ...state.campaign, shop },
+      };
+    }
+    case "APPLY_QUEST_REWARD": {
+      const quests = (state.campaign?.agentQuests ?? []).map(q => {
+        if (q.agentId !== action.agentId || q.name !== action.questName) return q;
+        return { ...q, completed: true };
+      });
+      const quest = quests.find(q => q.agentId === action.agentId && q.name === action.questName);
+      if (!quest) return state;
+
+      const agents = state.agents.map(a => {
+        if (a.id !== action.agentId) return a;
+        const updated = { ...a };
+        switch (quest.reward.type) {
+          case "stat_boost":
+            if (a.specialty === "trade") updated.haggleBonus += quest.reward.value;
+            else if (a.specialty === "scout" || a.specialty === "investigation") updated.scoutBonus += quest.reward.value;
+            else updated.charmBonus += quest.reward.value;
+            break;
+          case "cost_reduction":
+            updated.costPerMission = Math.max(1, a.costPerMission - quest.reward.value);
+            break;
+        }
+        return updated;
+      });
+
+      return {
+        ...state,
+        agents,
+        campaign: { ...state.campaign, agentQuests: quests },
       };
     }
     default:

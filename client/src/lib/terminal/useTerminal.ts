@@ -96,6 +96,24 @@ export function useTerminal() {
           }
           break;
         }
+        case "PURCHASE_ITEM": {
+          const itemId = (sideEffect as any).itemId;
+          dispatch({ type: "PURCHASE_ITEM", itemId });
+          pendingRefresh.current = true;
+          // Small delay for state to flush, then refresh shop
+          setTimeout(() => {
+            setTerm(prev => {
+              const { state: refreshed } = transition(prev, game, "SHOP_REFRESHED");
+              return refreshed;
+            });
+          }, 50);
+          break;
+        }
+        case "APPLY_QUEST_REWARD": {
+          const { agentId, questName } = sideEffect as any;
+          dispatch({ type: "APPLY_QUEST_REWARD", agentId, questName });
+          break;
+        }
         case "CHECK_SAVE": {
           checkForSavedGame();
           break;

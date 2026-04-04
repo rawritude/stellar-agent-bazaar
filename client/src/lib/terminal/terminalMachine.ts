@@ -2,6 +2,7 @@ import type { TerminalState, TerminalScreen, TerminalSideEffect, TerminalChoice,
 import { blank, line, span } from "./terminalTypes";
 import type { GameState, RiskPosture } from "../gameData";
 import * as Text from "./terminalText";
+import { morningBriefChoices } from "./uiHelpers";
 
 export function initialTerminalState(): TerminalState {
   return {
@@ -282,10 +283,17 @@ export function transition(
         return goToDistrictSelect(term, game, { type: "START_PLANNING" });
       }
       if (action === "VIEW_AGENTS") {
-        const agentLines = Text.buildAgentRosterView(game);
+        const agentLines = [
+          ...Text.buildAgentRosterView(game),
+          ...Text.buildAgentQuestLines(game),
+        ];
         return next("view_agents", agentLines, [
           { key: "b", label: "Back to morning brief", action: "BACK" },
         ]);
+      }
+      if (action === "VIEW_SHOP") {
+        const { lines, choices } = Text.buildShopScreen(game);
+        return next("view_shop", lines, choices);
       }
       if (action === "VIEW_NETWORK") {
         return next("view_network", Text.buildNetworkView(game), [
@@ -323,6 +331,26 @@ export function transition(
     case "view_network":
     case "view_ledger":
     case "view_rumors": {
+      if (action === "BACK") {
+        return goToMorningBrief(term, game);
+      }
+      break;
+    }
+
+    // ── SHOP ─────────────────────────────────────
+    case "view_shop": {
+      if (action === "BUY_ITEM") {
+        // Side effect will handle the purchase
+        return {
+          ...next("view_shop", [], []),
+          sideEffect: { type: "PURCHASE_ITEM", itemId: data } as any,
+        };
+      }
+      if (action === "SHOP_REFRESHED") {
+        // Rebuild shop screen with updated game state
+        const { lines, choices } = Text.buildShopScreen(game);
+        return next("view_shop", lines, choices);
+      }
       if (action === "BACK") {
         return goToMorningBrief(term, game);
       }
@@ -577,7 +605,7 @@ export function transition(
 
           // Check if any step in this mission has an unresolved decision point
           const decisionStep = mission.result?.actionSteps.find(
-            s => s.scene?.decision_point && !s.scene.decision_point.resolved
+            s => s.scene?.decision_point && !(s.scene.decision_point as any).resolved
           );
 
           if (decisionStep?.scene?.decision_point) {
@@ -665,6 +693,26 @@ export function transition(
       }
       break;
     }
+
+    // ── GAME WON ─────────────────────────────────
+    case "game_won": {
+      if (action === "RESTART") {
+        return next("splash", [...Text.SPLASH_ART], [
+          { key: "enter", label: "Press ENTER to begin...", action: "START" },
+        ], { pending: {}, history: [] });
+      }
+      break;
+    }
+
+    // ── GAME LOST ────────────────────────────────
+    case "game_lost": {
+      if (action === "RESTART") {
+        return next("splash", [...Text.SPLASH_ART], [
+          { key: "enter", label: "Press ENTER to begin...", action: "START" },
+        ], { pending: {}, history: [] });
+      }
+      break;
+    }
   }
 
   // Default: no transition
@@ -719,80 +767,19 @@ function goToMorningBrief(term: TerminalState, game: GameState): TransitionResul
     }
   }
 
-  // Show event announcements for any new events this day
-  const newEventLines: TerminalLine[] = [];
-  if (game.activeEvents.length > 0) {
-    for (const event of game.activeEvents) {
-      // Only show events that just started (daysRemaining close to their max)
-      if (event.daysRemaining >= 2 || game.activeEvents.length <= 2) {
-        newEventLines.push(...Text.buildEventAnnouncement(event));
-      }
-    }
-  }
-
-  const briefLines = Text.hakimMorningBrief(game);
-
-  const choices: TerminalChoice[] = [
-    { key: "1", label: "Begin planning missions", action: "PLAN" },
-    { key: "a", label: "View agents", action: "VIEW_AGENTS" },
-    { key: "n", label: "View market network", action: "VIEW_NETWORK" },
-    { key: "l", label: "View receipt ledger", action: "VIEW_LEDGER" },
-    { key: "r", label: "View rumors", action: "VIEW_RUMORS" },
-    { key: "x", label: "Agent NFTs (SEP-50)", action: "VIEW_NFTS" },
-  ];
-
-  // Show rival info if they exist
-  if (game.campaign?.rivalBrand) {
-    choices.push({
-      key: "v",
-      label: `Rival: ${game.campaign.rivalBrand} (Rep: ${game.campaign.rivalReputation})`,
-      action: "VIEW_AGENTS", // just for info display
-      disabled: true,
-    });
-  }
-
-  return {
-    state: {
-      ...term,
-      screen: "morning_brief",
-      lines: [...newEventLines, ...briefLines],
-      choices,
-      textInput: false,
-      pending: {},
-      history: [],
-    },
-  };
+  return goToMorningBriefDirect(term, game);
 }
 
-/** Go to morning brief, skipping event check (used after event is handled) */
+/** Go to morning brief screen (skipping event/game-over checks). */
 function goToMorningBriefDirect(term: TerminalState, game: GameState): TransitionResult {
-  // Skip the pendingRandomEvent check — go straight to the brief
   const briefLines = Text.hakimMorningBrief(game);
-
-  const choices: TerminalChoice[] = [
-    { key: "1", label: "Begin planning missions", action: "PLAN" },
-    { key: "a", label: "View agents", action: "VIEW_AGENTS" },
-    { key: "n", label: "View market network", action: "VIEW_NETWORK" },
-    { key: "l", label: "View receipt ledger", action: "VIEW_LEDGER" },
-    { key: "r", label: "View rumors", action: "VIEW_RUMORS" },
-    { key: "x", label: "Agent NFTs (SEP-50)", action: "VIEW_NFTS" },
-  ];
-
-  if (game.campaign?.rivalBrand) {
-    choices.push({
-      key: "v",
-      label: `Rival: ${game.campaign.rivalBrand} (Rep: ${game.campaign.rivalReputation})`,
-      action: "VIEW_AGENTS",
-      disabled: true,
-    });
-  }
 
   return {
     state: {
       ...term,
       screen: "morning_brief",
       lines: [...briefLines],
-      choices,
+      choices: morningBriefChoices(game),
       textInput: false,
       pending: {},
       history: [],

@@ -83,12 +83,14 @@ export async function connectWallet(): Promise<WalletResult> {
 
     console.log("[wallet] Step 5: Creating new wallet (this should trigger passkey prompt)...");
 
+    // @ts-expect-error Smart Account Kit API may accept 0 args at runtime
     const result = await kit.createWallet();
 
     console.log("[wallet] Step 6: Wallet created:", result.contractId);
     console.log("[wallet] Step 7: Funding wallet...");
 
     try {
+      // @ts-expect-error Smart Account Kit API may accept 0 args at runtime
       await kit.fundWallet();
       console.log("[wallet] Wallet funded");
     } catch (fundErr: any) {

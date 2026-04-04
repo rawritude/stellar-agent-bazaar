@@ -46,6 +46,7 @@ export interface StellarSettlementReceipt {
   memo: string;
   sourceAccount?: string;
   destinationAccount?: string;
+  x402Flow?: { type: string; label: string }[];
 }
 
 export interface StellarSettleResult {

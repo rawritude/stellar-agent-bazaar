@@ -86,7 +86,7 @@ export function rollAgentRarities(count: number): RarityTier[] {
 
   // Guarantee at least one agent is uncommon or better
   if (count >= 3 && rarities.every(r => r === "common")) {
-    rarities[Math.floor(Math.random() * count)] = "uncommon";
+    (rarities as RarityTier[])[Math.floor(Math.random() * count)] = "uncommon";
   }
 
   return rarities;

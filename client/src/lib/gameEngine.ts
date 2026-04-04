@@ -17,6 +17,11 @@ import {
   type ActionStep,
   type ActionType,
   type NetworkStats,
+  type CampaignState,
+  type CampaignWeek,
+  type RivalPersonality,
+  type ShopItem,
+  type AgentQuest,
   INITIAL_AGENTS,
   INITIAL_DISTRICTS,
   INITIAL_COUNTERPARTIES,
@@ -29,6 +34,7 @@ import {
   SIDE_EFFECTS,
   COUNTERPARTY_SUCCESS_LINES,
   COUNTERPARTY_FAILURE_LINES,
+  ACTION_TYPE_INFO,
 } from "./gameData";
 import { getSettlementAdapter, type SettlementRequest, type SettlementAdapter } from "./settlement";
 
@@ -91,6 +97,9 @@ export function createInitialState(brandName: string = "The Velvet Ledger"): Gam
       upkeepPerDay: 6,
       isGameOver: false,
       hasWon: false,
+      shop: [],
+      agentQuests: [],
+      unlockedCounterparties: [],
     },
     activeEvents: [],
     pendingDecisions: [],
@@ -118,7 +127,12 @@ export function dispatchMission(
   if (!agent || !district) return state;
   if (agent.status !== "idle") return state;
 
-  const totalCost = budget + agent.costPerMission;
+  // Apply budget discount from shop items
+  const budgetDiscount = (state.campaign?.shop ?? [])
+    .filter(s => s.id === "forged-permits" && s.purchased && s.effect.duration > 0)
+    .reduce((acc, s) => acc + s.effect.value, 0);
+  const discountedBudget = Math.round(budget * (1 - budgetDiscount));
+  const totalCost = discountedBudget + agent.costPerMission;
   if (state.cash < totalCost) return state;
 
   const mission: ActiveMission = {
@@ -126,7 +140,7 @@ export function dispatchMission(
     template,
     agent: { ...agent },
     district: { ...district },
-    budget,
+    budget: discountedBudget,
     riskPosture,
     status: "in_progress",
   };
@@ -268,7 +282,7 @@ async function resolveActionStep(
       if (data.scene) {
         scene = data.scene;
         // AI's outcome modifier adjusts the success chance
-        stepChance += scene.outcome_modifier;
+        stepChance += scene!.outcome_modifier;
       }
     } catch {
       // AI failed silently — proceed with procedural generation
@@ -600,7 +614,7 @@ export async function resolveDay(state: GameState, adapter?: SettlementAdapter, 
     const isWild = isWildResults[missionIdx];
 
     // Base morale change
-    let updatedAgent = {
+    let updatedAgent: Agent = {
       ...agent,
       status: "idle" as const,
       missionsCompleted: agent.missionsCompleted + 1,
@@ -749,7 +763,12 @@ export function advanceDay(state: GameState): GameState {
 
   // 7. Campaign progression
   const week = getCampaignWeek(nextDay);
-  const defaultCampaign = { week: 1 as CampaignWeek, totalDays: 30, rivalReputation: 0, rivalCash: 0, milestones: [], upkeepPerDay: 8, isGameOver: false, hasWon: false };
+  const defaultCampaign: CampaignState = {
+    week: 1 as CampaignWeek, totalDays: 30, rivalReputation: 0, rivalCash: 0,
+    milestones: [], upkeepPerDay: 8, isGameOver: false, hasWon: false,
+    shop: generateShopItems(), agentQuests: generateAgentQuests(state.agents),
+    unlockedCounterparties: [],
+  };
   const campaign = {
     ...defaultCampaign,
     ...state.campaign,
@@ -757,18 +776,45 @@ export function advanceDay(state: GameState): GameState {
     upkeepPerDay: 6 + (week - 1) * 1, // 6, 7, 8, 9 per week (gentler curve)
   };
 
-  // Add rival in week 2
+  // Add rival in week 2 (with personality)
   if (week >= 2 && !campaign.rivalBrand) {
-    campaign.rivalBrand = "The Crimson Ledger";
+    const rival = pickRival();
+    campaign.rivalBrand = rival.name;
+    campaign.rival = rival;
     campaign.rivalReputation = 20;
     campaign.rivalCash = 150;
   }
 
-  // Rival grows each day
+  // Rival grows each day + interference
   if (campaign.rivalBrand) {
     campaign.rivalReputation = clamp(campaign.rivalReputation + (roll(0.6) ? 2 : 1), 0, 100);
     campaign.rivalCash += Math.round(5 + Math.random() * 10);
+
+    // Rival interference (blocked by ward charm)
+    const hasProtection = (campaign.shop ?? []).some(
+      s => s.id === "ward-charm" && s.purchased && s.effect.duration > 0
+    );
+    if (campaign.rival && !hasProtection) {
+      const interference = resolveRivalInterference(campaign.rival, state);
+      if (interference) newLogs.push(interference);
+    }
   }
+
+  // Update shop availability based on reputation
+  campaign.shop = updateShopAvailability(campaign.shop ?? [], state.reputation);
+
+  // Update agent quest progress
+  campaign.agentQuests = updateQuestProgress(
+    campaign.agentQuests ?? [], state.agents, state.reputation
+  );
+
+  // Tick shop item durations
+  campaign.shop = (campaign.shop ?? []).map(item => {
+    if (item.purchased && item.effect.duration > 0) {
+      return { ...item, effect: { ...item.effect, duration: item.effect.duration - 1 } };
+    }
+    return item;
+  });
 
   // 8. Check win/lose conditions
   const endCheck = checkCampaignEnd({ ...state, day: nextDay, cash: upkeep.cash });
@@ -1012,7 +1058,7 @@ export function applyDailyUpkeep(state: GameState): { cash: number; events: stri
 // ACTIONABLE RUMORS — rumors become events
 // ═══════════════════════════════════════════════════════════════
 
-import type { ActiveEvent, EventEffect, CampaignWeek } from "./gameData";
+import type { ActiveEvent, EventEffect } from "./gameData";
 import { pickRandomEvent } from "./events/randomEvents";
 
 /** Rumor-to-event conversion table */
@@ -1167,4 +1213,192 @@ export function checkCampaignEnd(state: GameState): { isOver: boolean; hasWon: b
   }
 
   return { isOver: false, hasWon: false, reason: "" };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RIVAL PERSONALITY SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+const RIVAL_POOL: RivalPersonality[] = [
+  {
+    name: "The Crimson Ledger",
+    title: "Aggressive Monopolist",
+    style: "aggressive",
+    catchphrase: "Every coin you earn is a coin I should have had.",
+    preferredDistrict: "velvet-steps",
+    interferenceChance: 0.3,
+  },
+  {
+    name: "Silk & Shadow Co.",
+    title: "Cunning Undercutter",
+    style: "cunning",
+    catchphrase: "I don't compete with you. I simply make you irrelevant.",
+    preferredDistrict: "fungal-quarter",
+    interferenceChance: 0.25,
+  },
+  {
+    name: "The Golden Mule Cartel",
+    title: "Charm Offensive Specialist",
+    style: "charismatic",
+    catchphrase: "The merchants love me. Can they even spell your brand name?",
+    preferredDistrict: "festival-sprawl",
+    interferenceChance: 0.2,
+  },
+  {
+    name: "Obsidian & Ash Trading",
+    title: "Ruthless Profiteer",
+    style: "ruthless",
+    catchphrase: "Sentiment is for poets. This is business.",
+    interferenceChance: 0.35,
+  },
+];
+
+/** Pick a random rival personality. */
+export function pickRival(): RivalPersonality {
+  return RIVAL_POOL[Math.floor(Math.random() * RIVAL_POOL.length)];
+}
+
+/** Generate rival interference for the day. Returns a rumor string if interference happened. */
+export function resolveRivalInterference(rival: RivalPersonality, state: GameState): string | null {
+  if (!roll(rival.interferenceChance)) return null;
+
+  const interferences: Record<string, string[]> = {
+    aggressive: [
+      `${rival.name} undercut your prices in ${rival.preferredDistrict || "the bazaar"}. Merchants are distracted.`,
+      `${rival.name} poached a deal you were working on. "${rival.catchphrase}"`,
+      `${rival.name} spread rumors about your brand quality. Some merchants are skeptical.`,
+    ],
+    cunning: [
+      `${rival.name} quietly secured an exclusive deal with a key counterparty.`,
+      `${rival.name} leaked false intel about your supply chain. Verify your sources.`,
+      `Someone saw ${rival.name}'s agents scouting your usual routes.`,
+    ],
+    charismatic: [
+      `${rival.name} threw a lavish party for merchants. Your agents weren't invited.`,
+      `${rival.name}'s charm offensive is working — counterparties seem more distant today.`,
+      `"${rival.catchphrase}" — overheard at the ${rival.preferredDistrict || "market square"}.`,
+    ],
+    ruthless: [
+      `${rival.name} filed a complaint about your permits. Expect delays.`,
+      `${rival.name} bought out a shipment you were tracking. Nothing personal.`,
+      `${rival.name} pressured a counterparty to refuse your agents. "${rival.catchphrase}"`,
+    ],
+  };
+
+  const pool = interferences[rival.style] || interferences.aggressive;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SHOP SYSTEM — Buy buffs between days
+// ═══════════════════════════════════════════════════════════════
+
+/** Generate the initial shop inventory. Items unlock as reputation grows. */
+export function generateShopItems(): ShopItem[] {
+  return [
+    {
+      id: "spice-tea",
+      name: "Hakim's Spice Tea",
+      description: "Boosts all agent morale by 10. \"Trust me, this blend opens minds.\"",
+      cost: 15,
+      effect: { type: "morale_boost", value: 10, duration: 0 },
+      available: true,
+      purchased: false,
+    },
+    {
+      id: "forged-permits",
+      name: "Pre-Approved Permits",
+      description: "Reduces mission budget costs by 20% for 3 days.",
+      cost: 25,
+      effect: { type: "budget_discount", value: 0.2, duration: 3 },
+      available: true,
+      purchased: false,
+    },
+    {
+      id: "gossip-network",
+      name: "Gossip Network Subscription",
+      description: "Gain +5 reputation instantly. The crows will speak well of you.",
+      cost: 30,
+      effect: { type: "rep_boost", value: 5, duration: 0 },
+      available: true,
+      purchased: false,
+    },
+    {
+      id: "market-almanac",
+      name: "The Market Almanac",
+      description: "Reveals hidden intel about counterparty preferences for 5 days.",
+      cost: 20,
+      effect: { type: "intel", value: 1, duration: 5 },
+      available: false, // Unlocks at rep 30
+      purchased: false,
+    },
+    {
+      id: "ward-charm",
+      name: "Ward Against Rivals",
+      description: "Blocks rival interference for 3 days. \"Ancient bazaar magic.\"",
+      cost: 40,
+      effect: { type: "protection", value: 1, duration: 3 },
+      available: false, // Unlocks at rep 50
+      purchased: false,
+    },
+  ];
+}
+
+/** Update shop item availability based on reputation. */
+export function updateShopAvailability(shop: ShopItem[], reputation: number): ShopItem[] {
+  return shop.map(item => {
+    if (item.id === "market-almanac" && reputation >= 30) return { ...item, available: true };
+    if (item.id === "ward-charm" && reputation >= 50) return { ...item, available: true };
+    return item;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENT QUEST SYSTEM — Personal goals for each agent
+// ═══════════════════════════════════════════════════════════════
+
+/** Generate personal quests for agents. */
+export function generateAgentQuests(agents: Agent[]): AgentQuest[] {
+  const questTemplates: { req: AgentQuest["requirement"]["type"]; target: number; reward: AgentQuest["reward"] }[] = [
+    { req: "missions", target: 5, reward: { type: "stat_boost", value: 3, description: "+3 to primary stat" } },
+    { req: "missions", target: 10, reward: { type: "cost_reduction", value: 2, description: "-2¤ mission fee" } },
+    { req: "reputation", target: 40, reward: { type: "stat_boost", value: 2, description: "+2 to all stats" } },
+  ];
+
+  return agents.map((agent, i) => {
+    const template = questTemplates[i % questTemplates.length];
+    const questNames: Record<string, string> = {
+      trade: "Master Haggler",
+      scout: "Eyes of the Bazaar",
+      investigation: "The Truth Seeker",
+      branding: "Fame & Fortune",
+      diplomacy: "Bridge Builder",
+    };
+
+    return {
+      agentId: agent.id,
+      name: questNames[agent.specialty] || "Proving Grounds",
+      description: `${agent.name} wants to prove themselves. Complete ${template.target} ${template.req === "missions" ? "missions" : "reputation milestone"} to unlock their potential.`,
+      requirement: { type: template.req, target: template.target, current: 0 },
+      reward: template.reward,
+      completed: false,
+    };
+  });
+}
+
+/** Update quest progress based on current state. */
+export function updateQuestProgress(quests: AgentQuest[], agents: Agent[], reputation: number): AgentQuest[] {
+  return quests.map(quest => {
+    if (quest.completed) return quest;
+
+    const agent = agents.find(a => a.id === quest.agentId);
+    if (!agent) return quest;
+
+    let current = 0;
+    if (quest.requirement.type === "missions") current = agent.missionsCompleted;
+    else if (quest.requirement.type === "reputation") current = reputation;
+
+    const completed = current >= quest.requirement.target;
+    return { ...quest, requirement: { ...quest.requirement, current }, completed };
+  });
 }

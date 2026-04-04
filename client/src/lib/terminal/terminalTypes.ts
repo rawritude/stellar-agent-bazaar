@@ -68,6 +68,7 @@ export type TerminalScreen =
   | "mission_decision"
   | "resume_or_new"
   | "event_announcement"
+  | "view_shop"
   | "game_won"
   | "game_lost";
 
@@ -105,7 +106,9 @@ export type TerminalSideEffect =
   | { type: "CHECK_SAVE" }
   | { type: "SAVE_GAME" }
   | { type: "LOAD_SAVE" }
-  | { type: "APPLY_EVENT"; choice: number };
+  | { type: "APPLY_EVENT"; choice: number }
+  | { type: "PURCHASE_ITEM"; itemId: string }
+  | { type: "APPLY_QUEST_REWARD"; agentId: string; questName: string };
 
 // Helper to build lines quickly
 export function line(...spans: (string | TerminalSpan)[]): TerminalLine {

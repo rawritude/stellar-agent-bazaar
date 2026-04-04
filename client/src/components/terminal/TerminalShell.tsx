@@ -2,9 +2,10 @@ import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useGame } from "@/lib/gameContext";
 import { useTerminal } from "@/lib/terminal/useTerminal";
 import { TERMINAL_COLORS, TERMINAL_BG, TERMINAL_FONT } from "@/lib/terminal/terminalColors";
-import { getReputationTier, getCashTier } from "@/lib/gameEngine";
+import { getReputationTier } from "@/lib/gameEngine";
 import { AnimationManager } from "@/lib/terminal/animations";
 import { PANEL_SCREENS, ScreenLayout } from "./PanelLayouts";
+import { cash as formatCash, getAgentRarity } from "@/lib/terminal/uiHelpers";
 import type { TerminalLine as TLine, TerminalSpan, TerminalChoice } from "@/lib/terminal/terminalTypes";
 
 // ═══════════════════════════════════════════════════════════════
@@ -322,11 +323,11 @@ function TerminalInput({
 function StatusBar({ screen }: { screen: string }) {
   const { state, stellarAdapter, aiEnabled, wallet } = useGame();
   const rep = getReputationTier(state.reputation);
-  const cash = getCashTier(state.cash);
   const idle = state.agents.filter(a => a.status === "idle").length;
 
-  // Don't show status bar on splash/intro/name screens
-  if (["splash", "narrator_intro", "name_brand"].includes(screen)) return null;
+  // Don't show status bar on early onboarding screens
+  const hideOn = ["splash", "narrator_intro", "name_brand", "stellar_choice", "stellar_connecting", "generating_agents"];
+  if (hideOn.includes(screen)) return null;
 
   return (
     <div
@@ -348,7 +349,7 @@ function StatusBar({ screen }: { screen: string }) {
         Day <span style={{ color: TERMINAL_COLORS.white }}>{state.day}</span>
       </span>
       <span>
-        Cash: <span style={{ color: TERMINAL_COLORS.gold }}>{state.cash}</span>
+        Cash: <span style={{ color: TERMINAL_COLORS.gold }}>{formatCash(state.cash)}</span>
       </span>
       <span>
         Rep: <span style={{ color: TERMINAL_COLORS.purple }}>{state.reputation}/100</span>
@@ -359,7 +360,7 @@ function StatusBar({ screen }: { screen: string }) {
       </span>
       <span>
         {wallet
-          ? <><span style={{ color: TERMINAL_COLORS.teal }}>Passkey</span></>
+          ? <><span style={{ color: TERMINAL_COLORS.teal }}>Stellar (Passkey)</span></>
           : stellarAdapter
           ? <><span style={{ color: TERMINAL_COLORS.teal }}>Stellar</span></>
           : <><span style={{ color: TERMINAL_COLORS.dim }}>Simulated</span></>
@@ -389,19 +390,28 @@ export function TerminalShell() {
   const [isTyping, setIsTyping] = useState(false);
   const prevLineCount = useRef(0);
 
-  const narrativeScreens = new Set(["narrator_intro", "meet_agents", "stellar_connecting", "generating_agents", "event_announcement", "game_won", "game_lost", "resolution_narrative"]);
+  // ── Typewriter: story/narrative screens get progressive line reveal.
+  // Panel screens are excluded (they render CSS layouts, not term.lines).
+  // Loading screens are excluded (spinner must be visible immediately).
+  const typewriterScreens = new Set([
+    "narrator_intro",    // Hakim's opening monologue
+    "stellar_choice",    // Cosmic Ledger introduction
+    "meet_agents",       // Agent reveal (one at a time)
+    "resume_or_new",     // Save game found prompt
+    "event_announcement", // Random event story
+    "game_won",          // Victory screen
+    "game_lost",         // Defeat screen
+  ]);
 
   useEffect(() => {
-    if (narrativeScreens.has(term.screen) && term.lines.length > 3) {
-      // Narrative screen — reveal lines progressively
+    if (typewriterScreens.has(term.screen) && term.lines.length > 3) {
       setRevealedLines(0);
       setIsTyping(true);
     } else {
-      // Data screen — show everything immediately
       setRevealedLines(term.lines.length);
       setIsTyping(false);
     }
-  }, [term.screen, term.lines]); // triggers on every screen change since lines are now replaced
+  }, [term.screen, term.lines]);
 
   // Timer to reveal lines
   useEffect(() => {
@@ -440,197 +450,170 @@ export function TerminalShell() {
     return () => animManager.stop();
   }, [animManager]);
 
-  // Trigger animations based on screen transitions
+  // ── Animations: triggered on screen transitions ──────────────
+  //
+  // Three categories:
+  //   Ambient    — infinite loops while on a screen (shimmer, constellation)
+  //   Entrance   — brief flair when a screen appears (stamp, sparkle)
+  //   Loading    — spinners for async operations
+  //
+  // Convention: each screen clears previous animations, then adds its own.
+
   useEffect(() => {
-    const lineCount = term.lines.length;
+    const lc = term.lines.length;
+    const now = Date.now();
 
-    // Splash screen: shimmer on the title
-    if (term.screen === "splash" && lineCount > 0) {
-      animManager.clear();
-      animManager.add({
-        id: "splash-shimmer",
-        type: "shimmer",
-        startTime: Date.now(),
-        duration: 0, // infinite while on splash
-        frameRate: 80,
-        lineStart: Math.max(0, lineCount - 8),
-        lineCount: 4,
-        config: { palette: ["#8b6914", "#b8860b", "#d4a843", "#ffd700", "#d4a843", "#b8860b"] },
-      });
-    }
+    // Clear all animations on every screen change
+    animManager.clear();
 
-    // Resolving: spinner
-    if (term.screen === "resolving") {
-      animManager.add({
-        id: "resolve-spinner",
-        type: "spinner",
-        startTime: Date.now(),
-        duration: 0,
-        frameRate: 120,
-        lineStart: lineCount - 2,
-        lineCount: 1,
-        config: {},
-      });
-    }
-
-    // Stellar connecting: constellation
-    if (term.screen === "stellar_connecting") {
-      animManager.add({
-        id: "stellar-constellation",
-        type: "constellation",
-        startTime: Date.now(),
-        duration: 4000,
-        frameRate: 150,
-        lineStart: Math.max(0, lineCount - 5),
-        lineCount: 3,
-        config: { palette: ["#1a4040", "#2d6a6a", "#3d8b8b", "#5cb8a5", "#7dd4c0"] },
-      });
-    }
-
-    // Meet agents: rarity-based animations on agent name
-    if (term.screen === "meet_agents" && term.agentPage > 0) {
-      const agent = gameState.agents[term.agentPage - 1];
-      if (agent) {
-        // Clear previous agent animation
-        animManager.remove("agent-rarity");
-        animManager.remove("agent-sparkle");
-
-        // Determine rarity from highest stat
-        const maxStat = Math.max(
-          Math.abs(agent.haggleBonus),
-          Math.abs(agent.scoutBonus),
-          Math.abs(agent.charmBonus),
-        );
-
-        // Find where the agent name line was appended (near the end of current lines)
-        const nameLineIdx = Math.max(0, lineCount - 15); // agent intro is ~15 lines
-
-        if (maxStat >= 27) {
-          // LEGENDARY — rainbow shimmer + sparkle
+    switch (term.screen) {
+      // ── SPLASH: gold shimmer on title (ambient, infinite) ──
+      case "splash":
+        if (lc > 0) {
           animManager.add({
-            id: "agent-rarity",
-            type: "rainbow",
-            startTime: Date.now(),
-            duration: 4000,
-            frameRate: 80,
-            lineStart: nameLineIdx,
-            lineCount: 3,
-            config: {},
-          });
-          animManager.add({
-            id: "agent-sparkle",
-            type: "sparkle",
-            startTime: Date.now(),
-            duration: 4000,
-            frameRate: 100,
-            lineStart: nameLineIdx,
-            lineCount: 5,
-            config: { intensity: 0.12 },
-          });
-        } else if (maxStat >= 22) {
-          // RARE — gold shimmer
-          animManager.add({
-            id: "agent-rarity",
-            type: "shimmer",
-            startTime: Date.now(),
-            duration: 3000,
-            frameRate: 80,
-            lineStart: nameLineIdx,
-            lineCount: 3,
+            id: "splash-shimmer", type: "shimmer", startTime: now,
+            duration: 0, frameRate: 80,
+            lineStart: Math.max(0, lc - 8), lineCount: 4,
             config: { palette: ["#8b6914", "#b8860b", "#d4a843", "#ffd700", "#d4a843", "#b8860b"] },
           });
-        } else if (maxStat >= 15) {
-          // UNCOMMON — teal pulse
-          animManager.add({
-            id: "agent-rarity",
-            type: "pulse",
-            startTime: Date.now(),
-            duration: 2500,
-            frameRate: 400,
-            lineStart: nameLineIdx,
-            lineCount: 2,
-            config: { palette: ["#5cb8a5", "#3d8b8b"] },
-          });
         }
-        // COMMON (< 15) — no animation
-      }
-    }
+        break;
 
-    // Game won: fireworks + rainbow
-    if (term.screen === "game_won") {
-      animManager.remove("win-fireworks");
-      animManager.remove("win-rainbow");
-      animManager.add({
-        id: "win-fireworks",
-        type: "sparkle",
-        startTime: Date.now(),
-        duration: 8000,
-        frameRate: 80,
-        lineStart: Math.max(0, lineCount - 20),
-        lineCount: 18,
-        config: { intensity: 0.15 },
-      });
-      animManager.add({
-        id: "win-rainbow",
-        type: "rainbow",
-        startTime: Date.now(),
-        duration: 8000,
-        frameRate: 80,
-        lineStart: Math.max(0, lineCount - 6),
-        lineCount: 4,
-        config: {},
-      });
-    }
+      // ── NARRATOR INTRO: subtle gold shimmer on Hakim's portrait ──
+      case "narrator_intro":
+        animManager.add({
+          id: "intro-shimmer", type: "shimmer", startTime: now,
+          duration: 3000, frameRate: 100,
+          lineStart: 0, lineCount: Math.min(8, lc),
+          config: { palette: ["#8b6914", "#b8860b", "#d4a843", "#ffd700", "#d4a843", "#b8860b"] },
+        });
+        break;
 
-    // Game lost: pulse red
-    if (term.screen === "game_lost") {
-      animManager.remove("lose-pulse");
-      animManager.add({
-        id: "lose-pulse",
-        type: "pulse",
-        startTime: Date.now(),
-        duration: 5000,
-        frameRate: 600,
-        lineStart: Math.max(0, lineCount - 15),
-        lineCount: 3,
-        config: { palette: ["#e25555", "#706858"] },
-      });
-    }
+      // ── STELLAR CHOICE (Cosmic Ledger): teal constellation on art ──
+      case "stellar_choice":
+        animManager.add({
+          id: "ledger-constellation", type: "constellation", startTime: now,
+          duration: 5000, frameRate: 150,
+          lineStart: 0, lineCount: Math.min(12, lc),
+          config: { palette: ["#1a4040", "#2d6a6a", "#3d8b8b", "#5cb8a5", "#7dd4c0"] },
+        });
+        break;
 
-    // Event announcement: stamp effect
-    if (term.screen === "morning_brief" && lineCount > 20) {
-      // Check if there are event lines (they'd be before the morning brief)
-      // Simple heuristic: if there's event art, stamp it
-      animManager.remove("event-stamp");
-    }
+      // ── STELLAR CONNECTING: constellation + spinner (loading) ──
+      case "stellar_connecting":
+        animManager.add({
+          id: "connect-constellation", type: "constellation", startTime: now,
+          duration: 4000, frameRate: 150,
+          lineStart: Math.max(0, lc - 5), lineCount: 3,
+          config: { palette: ["#1a4040", "#2d6a6a", "#3d8b8b", "#5cb8a5", "#7dd4c0"] },
+        });
+        animManager.add({
+          id: "connect-spinner", type: "spinner", startTime: now,
+          duration: 0, frameRate: 120,
+          lineStart: Math.max(0, lc - 2), lineCount: 1,
+          config: {},
+        });
+        break;
 
-    // Generating agents: spinner
-    if (term.screen === "generating_agents") {
-      animManager.add({
-        id: "gen-spinner",
-        type: "spinner",
-        startTime: Date.now(),
-        duration: 0,
-        frameRate: 120,
-        lineStart: Math.max(0, lineCount - 2),
-        lineCount: 1,
-        config: {},
-      });
-    }
+      // ── MEET AGENTS: rarity-based animation on agent reveal ──
+      case "meet_agents":
+        if (term.agentPage > 0) {
+          const agent = gameState.agents[term.agentPage - 1];
+          if (agent) {
+            const rarity = getAgentRarity(agent);
+            const nameLineIdx = Math.max(0, lc - 15);
 
-    // Clear animations when leaving certain screens
-    const persistScreens = ["splash", "resolving", "stellar_connecting", "meet_agents", "generating_agents", "game_won", "game_lost"];
-    if (!persistScreens.includes(term.screen)) {
-      animManager.remove("splash-shimmer");
-      animManager.remove("resolve-spinner");
-      animManager.remove("stellar-constellation");
-      animManager.remove("agent-rarity");
-      animManager.remove("agent-sparkle");
-      animManager.remove("gen-spinner");
-      animManager.remove("win-fireworks");
-      animManager.remove("win-rainbow");
-      animManager.remove("lose-pulse");
-      animManager.remove("event-stamp");
+            if (rarity.label === "LEGENDARY") {
+              animManager.add({
+                id: "agent-rarity", type: "rainbow", startTime: now,
+                duration: 4000, frameRate: 80,
+                lineStart: nameLineIdx, lineCount: 3, config: {},
+              });
+              animManager.add({
+                id: "agent-sparkle", type: "sparkle", startTime: now,
+                duration: 4000, frameRate: 100,
+                lineStart: nameLineIdx, lineCount: 5,
+                config: { intensity: 0.12 },
+              });
+            } else if (rarity.label === "RARE") {
+              animManager.add({
+                id: "agent-rarity", type: "shimmer", startTime: now,
+                duration: 3000, frameRate: 80,
+                lineStart: nameLineIdx, lineCount: 3,
+                config: { palette: ["#8b6914", "#b8860b", "#d4a843", "#ffd700", "#d4a843", "#b8860b"] },
+              });
+            } else if (rarity.label === "UNCOMMON") {
+              animManager.add({
+                id: "agent-rarity", type: "pulse", startTime: now,
+                duration: 2500, frameRate: 400,
+                lineStart: nameLineIdx, lineCount: 2,
+                config: { palette: ["#5cb8a5", "#3d8b8b"] },
+              });
+            }
+            // COMMON — no animation
+          }
+        }
+        break;
+
+      // ── GENERATING AGENTS: spinner (loading) ──
+      case "generating_agents":
+        animManager.add({
+          id: "gen-spinner", type: "spinner", startTime: now,
+          duration: 0, frameRate: 120,
+          lineStart: Math.max(0, lc - 2), lineCount: 1,
+          config: {},
+        });
+        break;
+
+      // ── EVENT ANNOUNCEMENT: stamp flash on event art ──
+      case "event_announcement":
+        animManager.add({
+          id: "event-stamp", type: "stamp", startTime: now,
+          duration: 1500, frameRate: 60,
+          lineStart: 0, lineCount: Math.min(10, lc),
+          config: {},
+        });
+        break;
+
+      // ── RESOLVING: spinner (loading) ──
+      case "resolving":
+        animManager.add({
+          id: "resolve-spinner", type: "spinner", startTime: now,
+          duration: 0, frameRate: 120,
+          lineStart: Math.max(0, lc - 2), lineCount: 1,
+          config: {},
+        });
+        break;
+
+      // ── GAME WON: sparkle fireworks + rainbow (celebration) ──
+      case "game_won":
+        animManager.add({
+          id: "win-fireworks", type: "sparkle", startTime: now,
+          duration: 8000, frameRate: 80,
+          lineStart: Math.max(0, lc - 20), lineCount: 18,
+          config: { intensity: 0.15 },
+        });
+        animManager.add({
+          id: "win-rainbow", type: "rainbow", startTime: now,
+          duration: 8000, frameRate: 80,
+          lineStart: Math.max(0, lc - 6), lineCount: 4,
+          config: {},
+        });
+        break;
+
+      // ── GAME LOST: red pulse (somber) ──
+      case "game_lost":
+        animManager.add({
+          id: "lose-pulse", type: "pulse", startTime: now,
+          duration: 5000, frameRate: 600,
+          lineStart: Math.max(0, lc - 15), lineCount: 3,
+          config: { palette: ["#e25555", "#706858"] },
+        });
+        break;
+
+      // All other screens: no animation
+      default:
+        break;
     }
   }, [term.screen, term.lines.length, term.agentPage, animManager, gameState.agents]);
 

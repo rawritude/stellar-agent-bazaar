@@ -205,17 +205,56 @@ export interface EventEffect {
   description: string;
 }
 
+export interface RivalPersonality {
+  name: string;                   // "The Crimson Ledger", "Silk & Shadow Co.", etc.
+  title: string;                  // "Aggressive Monopolist", "Charm Offensive", etc.
+  style: "aggressive" | "cunning" | "charismatic" | "ruthless";
+  catchphrase: string;            // Rival's signature taunt
+  preferredDistrict?: string;     // District they dominate
+  interferenceChance: number;     // 0-1 chance of messing with player per day
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  cost: number;
+  effect: ShopItemEffect;
+  available: boolean;             // Unlocked by reputation/day
+  purchased: boolean;
+}
+
+export interface ShopItemEffect {
+  type: "morale_boost" | "budget_discount" | "rep_boost" | "intel" | "protection";
+  value: number;
+  duration: number;               // Days the effect lasts (0 = permanent)
+  target?: string;                // Agent ID or district ID
+}
+
+export interface AgentQuest {
+  agentId: string;
+  name: string;
+  description: string;
+  requirement: { type: "missions" | "reputation" | "counterparty_trust"; target: number; current: number };
+  reward: { type: "stat_boost" | "cost_reduction" | "unlock_ability"; value: number; description: string };
+  completed: boolean;
+}
+
 export interface CampaignState {
   week: CampaignWeek;
   totalDays: number;              // Campaign length (default 30)
   rivalBrand?: string;            // Rival brand name (appears week 2)
   rivalReputation: number;        // Rival's reputation
   rivalCash: number;              // Rival's estimated cash
+  rival?: RivalPersonality;       // Rival personality details
   milestones: string[];           // Achieved milestones
   upkeepPerDay: number;           // Daily cost (rent + agent salaries)
   isGameOver: boolean;
   gameOverReason?: string;
   hasWon: boolean;
+  shop: ShopItem[];               // Available shop items
+  agentQuests: AgentQuest[];      // Active personal quests
+  unlockedCounterparties: string[]; // IDs of counterparties unlocked by milestones
 }
 
 // ── Mid-Mission Decision ────────────────────────────────────
@@ -560,6 +599,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "cooperative",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "guild-of-ledgers",
@@ -576,6 +619,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "neutral",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "fungal-permits",
@@ -592,6 +639,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "chaotic",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "whisper-network",
@@ -608,6 +659,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "cooperative",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "cart-and-mule",
@@ -624,6 +679,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "cooperative",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "magnifying-order",
@@ -640,6 +699,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "neutral",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "crows-analytics",
@@ -656,6 +719,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "neutral",
     interactionCount: 0,
+    trust: 0,
+    priceModifier: 0,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "shadow-desk",
@@ -672,6 +739,10 @@ export const INITIAL_COUNTERPARTIES: Counterparty[] = [
     settlementMode: "simulated",
     mood: "hostile",
     interactionCount: 0,
+    trust: -10,
+    priceModifier: 0.1,
+    lastInteractionDay: 0,
+    refusesService: false,
   },
   {
     id: "festival-criers",

@@ -118,6 +118,7 @@ export function nftToAgent(nft: AgentNFTMetadata): Agent {
     status: "idle",
     morale: nft.morale,
     missionsCompleted: nft.missionsCompleted,
+    memory: { opinions: [], refusals: [], lastMissionDay: 0, personalityShifts: [] },
   };
 }
 

@@ -1,6 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SCENE_SYSTEM_PROMPT, SCENE_TOOL, buildScenePrompt } from "./ai-prompts";
 
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TYPES
 // ═══════════════════════════════════════════════════════════════

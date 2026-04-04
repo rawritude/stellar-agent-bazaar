@@ -5,11 +5,31 @@ import { getReputationTier, getCashTier } from "../gameEngine";
 import {
   renderBazaarEntrance, renderDjinn, renderTrophy, renderLedger,
   renderChest, renderMarketplace, renderCaravan, renderSpyScene,
-  renderFestival, renderCrash, renderHandshake,
+  renderFestival, renderCrash, renderHandshake, renderRival,
+  renderMerchant, renderDesertSunrise, renderMoonlitNight,
+  renderCoinPile, renderBrokenCoin, renderScroll, renderKey,
+  renderCrown, renderDagger, renderStorm, renderFlames,
+  renderScales, renderShield, renderHourglass, renderCompass,
+  renderAlley, renderDice, renderPotion, renderTreasureMap,
+  renderTaxCollector,
 } from "./brailleArt";
+import {
+  getHakimGreeting, getAgentRarity, agentStatLine, agentMetaLine,
+  agentSummaryLines, cash, financialSummaryLines, sectionHeader,
+  treasuryLines, hakimDailyComment,
+} from "./uiHelpers";
 
 // ===============================================================
-// ASCII ART
+// ART HELPERS
+// ===============================================================
+
+/** Center all lines in an array (for braille art paired with CSS titles). */
+function centered(lines: TerminalLine[]): TerminalLine[] {
+  return lines.map(l => ({ ...l, centered: true }));
+}
+
+// ===============================================================
+// SCENE ART
 // ===============================================================
 
 export const SPLASH_ART: TerminalLine[] = [
@@ -36,122 +56,52 @@ export const THIN_DIVIDER: TerminalLine[] = [
 ];
 
 const HAKIM_PORTRAIT: TerminalLine[] = [
-  ...renderDjinn(),
+  ...centered(renderDjinn()),
   blank(),
   title("Hakim", "gold", "1.6em", true),
   title("the Ledger-Keeper", "amber", "1em", false),
   blank(),
-  line(span("     Keeper of Receipts. Counter of Coins.", "dim")),
-  line(span("     Witness to Every Deal in the Bazaar.", "dim")),
+  { spans: [{ text: "Keeper of Receipts. Counter of Coins.", color: "dim" as const }], centered: true },
+  { spans: [{ text: "Witness to Every Deal in the Bazaar.", color: "dim" as const }], centered: true },
 ];
 
-const AGENT_ART: Record<string, TerminalLine[]> = {
-  "pepper-jack": [
-    line(span("    🌶️  ", "orange"), span("Pepper Jack", "cyan", true)),
-    line(span("        ", "dim"), span("Senior Haggler", "dim")),
-  ],
-  "auntie-null": [
-    line(span("    🔮  ", "purple"), span("Auntie Null", "cyan", true)),
-    line(span("        ", "dim"), span("Vibe Auditor", "dim")),
-  ],
-  "ledger-pup": [
-    line(span("    🐕  ", "green"), span("Ledger Pup 4", "cyan", true)),
-    line(span("        ", "dim"), span("Reconciliation Unit", "dim")),
-  ],
-  "marquis-samples": [
-    line(span("    🎩  ", "amber"), span("The Marquis of Samples", "cyan", true)),
-    line(span("        ", "dim"), span("Brand Ambassador", "dim")),
-  ],
-  "crow-sigma": [
-    line(span("    🐦‍⬛  ", "white"), span("Crow Unit Sigma", "cyan", true)),
-    line(span("        ", "dim"), span("Intelligence Operative", "dim")),
-  ],
-};
+// Agent art is now always rendered via SPECIALTY_ART (braille-based).
+// The old hardcoded AGENT_ART for default agents was removed since
+// the game now always generates agents via AI.
 
 const DISTRICT_ART: Record<string, TerminalLine[]> = {
   "velvet-steps": [
-    line(span("    🏛️  ", "gold"), span("The Velvet Steps", "gold", true)),
-    line(span("        Marble colonnades. Silk awnings.", "dim")),
-    line(span("        Merchants who judge your embossing.", "dim")),
+    ...centered(renderMarketplace()),
+    title("The Velvet Steps", "gold", "1.1em", true),
+    { spans: [{ text: "Marble colonnades. Silk awnings. Merchants who judge your embossing.", color: "dim" as const }], centered: true },
   ],
   "fungal-quarter": [
-    line(span("    🍄  ", "green"), span("The Fungal Quarter", "green", true)),
-    line(span("        Damp. Aromatic. Deeply suspicious.", "dim")),
-    line(span("        Rare spices. Dubious permits.", "dim")),
+    ...centered(renderAlley()),
+    title("The Fungal Quarter", "green", "1.1em", true),
+    { spans: [{ text: "Damp. Aromatic. Deeply suspicious. Rare spices. Dubious permits.", color: "dim" as const }], centered: true },
   ],
   "festival-sprawl": [
-    line(span("    🎪  ", "orange"), span("Festival Sprawl", "orange", true)),
-    line(span("        Permanent carnival chaos.", "dim")),
-    line(span("        Pop-up stalls. Brand battles.", "dim")),
+    ...centered(renderFestival()),
+    title("Festival Sprawl", "orange", "1.1em", true),
+    { spans: [{ text: "Permanent carnival chaos. Pop-up stalls. Brand battles.", color: "dim" as const }], centered: true },
   ],
 };
 
 const SUCCESS_ART: TerminalLine[] = [
-  line(
-    span("        ✦ · ✧ · ✦ · ✧ · ✦", "green"),
-  ),
-  line(
-    span("      ▄▀", "green"),
-    span("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀", "green"),
-    span("▀▄", "green"),
-  ),
-  line(
-    span("      █", "green"),
-    span("  ★  S U C C E S S  ★  ", "green", true),
-    span("█", "green"),
-  ),
-  line(
-    span("      ▀▄", "green"),
-    span("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "green"),
-    span("▄▀", "green"),
-  ),
-  line(
-    span("        ✦ · ✧ · ✦ · ✧ · ✦", "green"),
-  ),
+  ...centered(renderHandshake()),
+  title("Mission Success", "green", "1.2em", true),
 ];
 
 const FAILURE_ART: TerminalLine[] = [
-  line(
-    span("        ░ · ░ · ░ · ░ · ░", "red"),
-  ),
-  line(
-    span("      ▄▀", "red"),
-    span("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀", "red"),
-    span("▀▄", "red"),
-  ),
-  line(
-    span("      █", "red"),
-    span("  ✗  F A I L E D  ✗    ", "red", true),
-    span("█", "red"),
-  ),
-  line(
-    span("      ▀▄", "red"),
-    span("▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄", "red"),
-    span("▄▀", "red"),
-  ),
-  line(
-    span("        ░ · ░ · ░ · ░ · ░", "dim"),
-  ),
+  ...centered(renderBrokenCoin()),
+  title("Mission Failed", "red", "1.2em", true),
 ];
 
 const RESOLVING_ART: TerminalLine[] = [
   blank(),
-  line(span("      ✦    ·    ✧    ·    ✦    ·    ✧", "dim")),
+  ...centered(renderCaravan()),
   blank(),
-  line(span("", "amber")),
-  line(span("    |                                 |", "amber")),
-  line(span("    |   ◆ ---- ◇ ---- ◆ ---- ◇ ---- ◆|", "gold")),
-  line(span("    |   |      |      |      |      ||", "dim")),
-  line(span("    |   ▼      ▼      ▼      ▼      ▼|", "amber")),
-  line(span("    |                                 |", "amber")),
-  line(span("    |   Agents are in the field...    |", "gold")),
-  line(span("    |   Negotiating. Trading. Scheming|", "dim")),
-  line(span("    |                                 |", "amber")),
-  line(span("    |   ◇ ---- ◆ ---- ◇ ---- ◆ ---- ◇|", "gold")),
-  line(span("    |                                 |", "amber")),
-  line(span("", "amber")),
-  blank(),
-  line(span("         Settling transactions...", "teal")),
+  title("Settling Transactions", "amber", "1.1em", true),
   blank(),
 ];
 
@@ -159,58 +109,28 @@ const RESOLVING_ART: TerminalLine[] = [
 
 const WALLET_ART: TerminalLine[] = [
   blank(),
-  ...renderLedger(),
+  ...centered(renderLedger()),
   blank(),
-  line(span("", "teal")),
   title("The Cosmic Ledger", "teal", "1.4em", true),
-  line(span("", "teal")),
   blank(),
-  line(span("       Where every transaction is written", "dim")),
-  line(span("             among the stars.", "dim")),
+  { spans: [{ text: "Where every transaction is written among the stars.", color: "dim" as const }], centered: true },
   blank(),
 ];
 
 const BRAND_NAMING_ART: TerminalLine[] = [
   blank(),
-  line(span("         ✦    ·    ✧    ·    ✦", "dim")),
+  ...centered(renderScroll()),
   blank(),
-  line(span("", "gold")),
-  line(span("         ╱|  ◇ --- ◆ --- ◇    |╲", "gold")),
-  line(span("        ╱ |                     | ╲", "gold")),
-  line(span("", "gold")),
-  line(span("       |  |  |               |  |  |", "amber")),
-  line(span("       |  |  |  ▸ __________ |  |  |", "amber")),
-  line(span("       |  |  |               |  |  |", "amber")),
-  line(span("       |  |  |  Your mark     |  |  |", "dim")),
-  line(span("       |  |  |  goes here.    |  |  |", "dim")),
-  line(span("       |  |  |               |  |  |", "amber")),
-  line(span("", "gold")),
-  line(span("        ╲ |                     | ╱", "gold")),
-  line(span("         ╲|  ◆ --- ◇ --- ◆    |╱", "gold")),
-  line(span("", "gold")),
-  blank(),
-  line(span("        The Ledger Awaits Your Mark", "amber")),
+  title("The Ledger Awaits Your Mark", "amber", "1.1em", true),
   blank(),
 ];
 
 const CREW_ASSEMBLING_ART: TerminalLine[] = [
   blank(),
-  line(span("        ✦    ·    ✧    ·    ✦    ·    ✧", "dim")),
+  ...centered(renderCompass()),
   blank(),
-  line(span("              The bazaar stirs...", "amber")),
-  line(span("           Agents are being summoned.", "dim")),
-  blank(),
-  line(span("", "amber")),
-  line(span("        | ·   · | | ·   · | | ·   · |", "amber")),
-  line(span("        |  +-+  | |  +-+  | |  +-+  |", "amber")),
-  line(span("        |  |?|  | |  |?|  | |  |?|  |", "gold")),
-  line(span("        |  +-+  | |  +-+  | |  +-+  |", "amber")),
-  line(span("        | ·   · | | ·   · | | ·   · |", "amber")),
-  blank(),
-  line(span("            |         |         |", "dim")),
-  line(span("            ░         ░         ░", "dim")),
-  blank(),
-  line(span("        Your crew is assembling...", "gold")),
+  title("Assembling Your Crew", "amber", "1.1em", true),
+  { spans: [{ text: "Agents are being summoned.", color: "dim" as const }], centered: true },
   blank(),
 ];
 
@@ -218,28 +138,7 @@ const CREW_ASSEMBLING_ART: TerminalLine[] = [
 
 export const CHAMPIONSHIP_WIN_ART: TerminalLine[] = [
   blank(),
-  line(span("   ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦", "gold")),
-  line(span("   ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·", "gold")),
-  blank(),
-  line(span("", "gold")),
-  line(span("   |                                       |", "gold")),
-  line(span("", "gold")),
-  line(span("   |            | ★  ★  ★  |              |", "gold")),
-  line(span("   |            |           |              |", "gold")),
-  line(span("   |            | CHAMPION  |              |", "gold", true)),
-  line(span("   |            |           |              |", "gold")),
-  line(span("   |            | ★  ★  ★  |              |", "gold")),
-  line(span("   |            +=====╤=====+              |", "gold")),
-  line(span("   |                 |||                   |", "amber")),
-  line(span("   |                 |||                   |", "amber")),
-  line(span("   |           +=====╧=====+               |", "amber")),
-  line(span("   |           | ◆ ◇ ◆ ◇ ◆|               |", "amber")),
-  line(span("   |           | ◇ ◆ ◇ ◆ ◇|               |", "amber")),
-  line(span("", "amber")),
-  line(span("   |                                       |", "gold")),
-  line(span("", "gold")),
-  blank(),
-  line(span("   ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦  ·  ✧  ·  ✦", "gold")),
+  ...centered(renderTrophy()),
   blank(),
   title("Grand Bazaar Champion", "gold", "1.8em", true),
   blank(),
@@ -247,21 +146,7 @@ export const CHAMPIONSHIP_WIN_ART: TerminalLine[] = [
 
 export const BANKRUPTCY_ART: TerminalLine[] = [
   blank(),
-  line(span("    ░  ·  ░  ·  ░  ·  ░  ·  ░  ·  ░", "dim")),
-  blank(),
-  line(span("", "red")),
-  line(span("    |                                   |", "red")),
-  line(span("", "dim")),
-  line(span("    |     |  ╲ ╱  ╲ ╱  ╲ ╱  ╲ ╱|       |", "dim")),
-  line(span("    |     |                     |       |", "dim")),
-  line(span("    |     |    ✗  C L O S E D   |       |", "red", true)),
-  line(span("    |     |                     |       |", "dim")),
-  line(span("    |     |   B O A R D E D     |       |", "dim")),
-  line(span("    |     |      U P            |       |", "dim")),
-  line(span("    |     |                     |       |", "dim")),
-  line(span("", "dim")),
-  line(span("    |                                   |", "red")),
-  line(span("", "red")),
+  ...centered(renderCrash()),
   blank(),
   title("Bankrupt", "red", "1.6em", true),
   blank(),
@@ -269,77 +154,49 @@ export const BANKRUPTCY_ART: TerminalLine[] = [
 
 export const MARKET_CRASH_ART: TerminalLine[] = [
   blank(),
-  line(span("", "red")),
-  line(span("        |   ░░░ CRASH ░░░       |", "red", true)),
-  line(span("        |  --- ◇ --- ◇ ---     |", "orange")),
-  line(span("        |    ▒▒▒  ▓▓▓  ▒▒▒     |", "dim")),
-  line(span("        |      ░░░░░░░░░        |", "dim")),
-  line(span("", "red")),
+  ...centered(renderStorm()),
+  title("Market Crash", "red", "1.2em", true),
   blank(),
 ];
 
 export const RIVAL_ARRIVES_ART: TerminalLine[] = [
   blank(),
-  line(span("", "purple")),
-  line(span("", "purple")),
-  line(span("        |       | ◆ ◆ |         |", "purple")),
-  line(span("        |       |  ▽  |         |", "purple")),
-  line(span("", "purple")),
-  line(span("        |    |           |      |", "purple")),
-  line(span("", "purple")),
-  line(span("", "purple")),
-  line(span("      THE CRIMSON LEDGER", "purple", true)),
-  line(span("           has arrived.", "dim")),
+  ...centered(renderRival()),
+  title("The Crimson Ledger", "purple", "1.2em", true),
+  { spans: [{ text: "has arrived.", color: "dim" as const }], centered: true },
   blank(),
 ];
 
 export const FESTIVAL_ART: TerminalLine[] = [
   blank(),
-  line(span("        ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦", "orange")),
-  line(span("", "orange")),
-  line(span("        |  F E S T I V A L      |", "orange", true)),
-  line(span("        |      W E E K          |", "amber", true)),
-  line(span("", "orange")),
-  line(span("        ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦ ✧ ✦", "orange")),
+  ...centered(renderFestival()),
+  title("Festival Week", "orange", "1.2em", true),
   blank(),
 ];
 
 export const DAWN_ART: TerminalLine[] = [
-  line(span("    ·  ✦  ·     ✧     ·  ✦  ·", "dim")),
-  line(span("  -----------------------------", "dim")),
-  line(span("  ░░▒▒▓▓████  ☀  ████▓▓▒▒░░", "amber")),
-  line(span("  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓", "amber")),
+  ...centered(renderDesertSunrise()),
 ];
 
 export const EVENING_ART: TerminalLine[] = [
-  line(span("                           ☽", "amber")),
-  line(span("    ·  ✧  ·     ·     ·  ✧  ·", "dim")),
-  line(span("  -----------------------------", "dim")),
-  line(span("    ✦     ✦     ✦     ✦     ✦", "orange")),
+  ...centered(renderMoonlitNight()),
 ];
 
 export const DOOR_SLAMMED_ART: TerminalLine[] = [
-  line(span("", "red")),
-  line(span("    |  ✗ REFUSED ✗  |", "red", true)),
-  line(span("", "red")),
+  divider("red"),
+  line(span("    ✗ REFUSED ✗", "red", true)),
+  divider("red"),
 ];
 
 export const HANDSHAKE_ART: TerminalLine[] = [
-  line(span("", "green")),
-  line(span("    |  ★ TRUSTED  ★     |", "green", true)),
-  line(span("    |    PARTNER        |", "green")),
-  line(span("", "green")),
+  divider("green"),
+  line(span("    ★ TRUSTED PARTNER ★", "green", true)),
+  divider("green"),
 ];
 
 export const WEEKLY_REPORT_ART: TerminalLine[] = [
   blank(),
-  line(span("", "amber")),
-  line(span("    |  WEEKLY  LEDGER       |", "amber", true)),
-  line(span("", "amber")),
-  line(span("", "dim")),
-  line(span("    |  |   Summary     |    |", "dim")),
-  line(span("", "dim")),
-  line(span("", "amber")),
+  title("Weekly Ledger", "amber", "1.2em", true),
   blank(),
 ];
 
@@ -347,38 +204,28 @@ export const WEEKLY_REPORT_ART: TerminalLine[] = [
 
 export const SPECIALTY_ART: Record<string, TerminalLine[]> = {
   trade: [
-    line(span("       +-+", "gold")),
-    line(span("    +--+¤+--+", "gold")),
-    line(span("    |  (◆◆)  |", "gold")),
-    line(span("    |  +-+  |  ", "gold"), span("Trader", "gold", true)),
+    ...centered(renderCoinPile()),
+    { spans: [{ text: "Trader", color: "gold" as const, bold: true }], centered: true },
     blank(),
   ],
   scout: [
-    line(span("      +--+", "teal")),
-    line(span("    +-+✦✦+-+", "teal")),
-    line(span("    | (◇ ◇) |", "teal")),
-    line(span("    |  +-+  |  ", "teal"), span("Scout", "teal", true)),
+    ...centered(renderCompass()),
+    { spans: [{ text: "Scout", color: "teal" as const, bold: true }], centered: true },
     blank(),
   ],
   investigation: [
-    line(span("      +--+", "purple")),
-    line(span("    +-+??+-+", "purple")),
-    line(span("    | (◆ ◆) |", "purple")),
-    line(span("    |  +-+  |  ", "purple"), span("Investigator", "purple", true)),
+    ...centered(renderKey()),
+    { spans: [{ text: "Investigator", color: "purple" as const, bold: true }], centered: true },
     blank(),
   ],
   branding: [
-    line(span("", "orange")),
-    line(span("", "orange")),
-    line(span("    ||★  ★||", "orange")),
-    line(span("", "orange"), span("Promoter", "orange", true)),
-    line(span("    +==╤===+", "orange")),
+    ...centered(renderCrown()),
+    { spans: [{ text: "Promoter", color: "orange" as const, bold: true }], centered: true },
+    blank(),
   ],
   diplomacy: [
-    line(span("      +--+", "green")),
-    line(span("    +-+◇◆+-+", "green")),
-    line(span("    | (◆ ◇) |", "green")),
-    line(span("    |  +-+  |  ", "green"), span("Diplomat", "green", true)),
+    ...centered(renderScales()),
+    { spans: [{ text: "Diplomat", color: "green" as const, bold: true }], centered: true },
     blank(),
   ],
 };
@@ -442,46 +289,24 @@ export function hakimNameResponse(name: string): TerminalLine[] {
 }
 
 export function hakimAgentIntro(agent: Agent, idx: number, total: number): TerminalLine[] {
-  // Use predefined art for known agents, generic portrait for generated ones
-  const art = AGENT_ART[agent.id];
+  const rarity = getAgentRarity(agent);
+  const specialtyPortrait = SPECIALTY_ART[agent.specialty] || SPECIALTY_ART.trade;
+
   const lines: TerminalLine[] = [
     ...THIN_DIVIDER,
     line(span(`  Agent ${idx + 1} of ${total}`, "dim")),
     blank(),
-  ];
-
-  // Determine rarity from peak stat
-  const maxStat = Math.max(
-    Math.abs(agent.haggleBonus),
-    Math.abs(agent.scoutBonus),
-    Math.abs(agent.charmBonus),
-  );
-  const rarity = maxStat >= 27 ? { label: "LEGENDARY", color: "purple" as const }
-    : maxStat >= 22 ? { label: "RARE", color: "gold" as const }
-    : maxStat >= 15 ? { label: "UNCOMMON", color: "teal" as const }
-    : { label: "COMMON", color: "dim" as const };
-
-  if (art) {
-    lines.push(...art);
-    if (rarity.label !== "COMMON") {
-      lines.push(indented(4, span(`[${rarity.label}]`, rarity.color, true)));
-    }
-  } else {
-    // Specialty-based portrait for AI-generated agents
-    const specialtyPortrait = SPECIALTY_ART[agent.specialty] || SPECIALTY_ART.trade;
-    lines.push(...specialtyPortrait!);
-    lines.push(blank());
-    lines.push(line(
+    ...specialtyPortrait!,
+    blank(),
+    line(
       span(`    ${agent.emoji} `, "white"),
       span(agent.name, "cyan", true),
       rarity.label !== "COMMON"
         ? span(`  [${rarity.label}]`, rarity.color, true)
         : span("", "dim"),
-    ));
-    lines.push(line(
-      span(`      ${agent.title}`, "dim"),
-    ));
-  }
+    ),
+    line(span(`      ${agent.title}`, "dim")),
+  ];
 
   lines.push(blank());
 
@@ -495,131 +320,51 @@ export function hakimAgentIntro(agent: Agent, idx: number, total: number): Termi
     lines.push(blank());
   }
 
-  lines.push(indented(4,
-    span("Haggle: ", "dim"),
-    span(`${agent.haggleBonus > 0 ? "+" : ""}${agent.haggleBonus}`, agent.haggleBonus > 0 ? "green" : "red"),
-    span("  Scout: ", "dim"),
-    span(`${agent.scoutBonus > 0 ? "+" : ""}${agent.scoutBonus}`, agent.scoutBonus > 0 ? "green" : "red"),
-    span("  Charm: ", "dim"),
-    span(`${agent.charmBonus > 0 ? "+" : ""}${agent.charmBonus}`, agent.charmBonus > 0 ? "green" : "red"),
-  ));
-  lines.push(indented(4,
-    span("Risk: ", "dim"),
-    span(`${Math.round(agent.riskFactor * 100)}%`, "orange"),
-    span("  Fee: ", "dim"),
-    span(`${agent.costPerMission}`, "gold"),
-    span("¤ per mission", "dim"),
-  ));
+  lines.push(agentStatLine(agent));
+  lines.push(agentMetaLine(agent));
   lines.push(blank());
 
-  // Hakim's comment — use predefined for known agents, generic for generated
-  const comments: Record<string, string> = {
-    "pepper-jack": "\"Pepper Jack has made me money. He has also made me enemies. Both are useful.\"",
-    "auntie-null": "\"Auntie Null will tell you things you don't want to hear. That is why she's expensive.\"",
-    "ledger-pup": "\"The fourth model. Don't ask about models one through three. We don't talk about that.\"",
-    "marquis-samples": "\"The Marquis is chaos with a top hat. Budget accordingly.\"",
-    "crow-sigma": "\"A crow in a waistcoat. Cheap, opinionated, and oddly effective.\"",
+  // Hakim's commentary based on specialty
+  const specialtyComments: Record<string, string[]> = {
+    trade: [
+      "\"A trader. Good. We always need someone willing to argue about prices.\"",
+      "\"This one knows the value of a good haggle. Or at least claims to.\"",
+    ],
+    scout: [
+      "\"An intelligence specialist. The bazaar's secrets are currency, and this one trades in them.\"",
+      "\"Information is power. This agent knows where to find it — and what it costs.\"",
+    ],
+    investigation: [
+      "\"An investigator. Useful when things smell... suspicious. Which is always, here.\"",
+      "\"This one sees what others miss. Sometimes that is a blessing. Sometimes a curse.\"",
+    ],
+    branding: [
+      "\"A brand specialist! Because in this bazaar, perception IS reality.\"",
+      "\"They say this one could sell sand in a desert. I believe them.\"",
+    ],
+    diplomacy: [
+      "\"A diplomat. Someone who can smile while being insulted. Essential in this business.\"",
+      "\"Charm opens doors that money cannot. This one has charm to spare.\"",
+    ],
   };
-
-  if (comments[agent.id]) {
-    lines.push(indented(2, span(comments[agent.id], "gold")));
-  } else {
-    // Generic Hakim commentary based on specialty
-    const specialtyComments: Record<string, string[]> = {
-      trade: [
-        "\"A trader. Good. We always need someone willing to argue about prices.\"",
-        "\"This one knows the value of a good haggle. Or at least claims to.\"",
-      ],
-      scout: [
-        "\"An intelligence specialist. The bazaar's secrets are currency, and this one trades in them.\"",
-        "\"Information is power. This agent knows where to find it — and what it costs.\"",
-      ],
-      investigation: [
-        "\"An investigator. Useful when things smell... suspicious. Which is always, here.\"",
-        "\"This one sees what others miss. Sometimes that is a blessing. Sometimes a curse.\"",
-      ],
-      branding: [
-        "\"A brand specialist! Because in this bazaar, perception IS reality.\"",
-        "\"They say this one could sell sand in a desert. I believe them.\"",
-      ],
-      diplomacy: [
-        "\"A diplomat. Someone who can smile while being insulted. Essential in this business.\"",
-        "\"Charm opens doors that money cannot. This one has charm to spare.\"",
-      ],
-    };
-    const pool = specialtyComments[agent.specialty] || specialtyComments.trade!;
-    lines.push(indented(2, span(pool[idx % pool.length], "gold")));
-  }
+  const pool = specialtyComments[agent.specialty] || specialtyComments.trade!;
+  lines.push(indented(2, span(pool[idx % pool.length], "gold")));
 
   lines.push(blank());
   return lines;
 }
 
 export function hakimMorningBrief(state: GameState): TerminalLine[] {
-  const rep = getReputationTier(state.reputation);
-  const cash = getCashTier(state.cash);
-  const idleAgents = state.agents.filter(a => a.status === "idle");
   const week = state.campaign?.week ?? 1;
-
-  // Different greetings based on state — expanded pool
-  let greeting: string;
-  if (state.day === 1) {
-    greeting = "\"The sun rises on your first day in the bazaar. Let us see what fortune has in store.\"";
-  } else if (state.cash < 15) {
-    greeting = "\"We are dangerously close to ruin. Every coin must count today.\"";
-  } else if (state.cash < 30) {
-    greeting = "\"Dawn again... and our purse is looking rather thin. We must be strategic today.\"";
-  } else if (state.cash > 300) {
-    greeting = "\"Another glorious morning! With this much gold, even the nobles will take our calls.\"";
-  } else if (state.reputation > 70) {
-    greeting = "\"The bazaar whispers your name with respect now. Let us not disappoint them.\"";
-  } else if (state.reputation > 50) {
-    greeting = "\"Our reputation grows. The merchants nod when we pass. A promising sign.\"";
-  } else if (state.campaign?.rivalBrand && state.reputation < state.campaign.rivalReputation) {
-    greeting = `\"The Crimson Ledger is outpacing us. Their reputation stands at ${state.campaign.rivalReputation}. We must move faster.\"`;
-  } else if (week === 4) {
-    greeting = "\"The final week. The Championship awaits. Every mission counts now.\"";
-  } else {
-    const greetings = [
-      "\"Another day, another opportunity to either profit or panic. I prefer profit.\"",
-      "\"The spice lanes await! I have checked our ledgers. We are still solvent. Barely.\"",
-      "\"Good morning! The merchants are stirring, the gossip crows are gossiping. Time to work.\"",
-      "\"Rise and shine! The market bell has rung. Somewhere, a deal awaits. Or a trap.\"",
-      "\"The aroma of cinnamon and ambition fills the air. Let us make our mark.\"",
-      "\"I consulted the stars last night. They said 'try harder.' Helpful as always.\"",
-      "\"Dawn breaks. The counterparties are sharpening their pencils. So should we.\"",
-      "\"Another morning in the bazaar. The permit goblins are already queuing. Bad sign.\"",
-    ];
-    greeting = greetings[state.day % greetings.length];
-  }
+  const greeting = getHakimGreeting(state);
 
   const lines: TerminalLine[] = [
     ...buildDawnHeader(state.day, week),
-    indented(2, span(greeting, "gold")),
+    indented(2, span(`"${greeting}"`, "gold")),
     blank(),
     ...THIN_DIVIDER,
     blank(),
-    indented(4,
-      span("Treasury: ", "dim"),
-      span(`${cash.emoji} ${state.cash}`, "gold", true),
-      span(" (", "dim"),
-      span(cash.name, state.cash > 100 ? "green" : state.cash > 30 ? "amber" : "red"),
-      span(")", "dim"),
-    ),
-    indented(4,
-      span("Reputation: ", "dim"),
-      span(`${rep.emoji} ${state.reputation}/100`, "purple"),
-      span(` (${rep.name})`, "dim"),
-    ),
-    indented(4,
-      span("Agents: ", "dim"),
-      span(`${idleAgents.length}/${state.agents.length}`, "cyan"),
-      span(" idle", "dim"),
-    ),
-    indented(4,
-      span("Missions completed: ", "dim"),
-      span(`${state.completedMissions.length}`, "white"),
-    ),
+    ...treasuryLines(state),
     blank(),
   ];
 
@@ -732,23 +477,12 @@ export function buildAgentChoices(state: GameState, missionType?: string): { lin
     lines.push(blank());
   } else {
     idle.forEach((a, i) => {
-      lines.push(indented(4,
-        span(`[${i + 1}] `, "amber"),
-        span(`${a.emoji} ${a.name}`, "cyan", true),
-        span(` — ${a.title}`, "dim"),
-      ));
-      lines.push(indented(6,
-        span("Haggle:", "dim"), span(`${a.haggleBonus > 0 ? "+" : ""}${a.haggleBonus}`, a.haggleBonus > 0 ? "green" : "red"),
-        span(" Scout:", "dim"), span(`${a.scoutBonus > 0 ? "+" : ""}${a.scoutBonus}`, a.scoutBonus > 0 ? "green" : "red"),
-        span(" Charm:", "dim"), span(`${a.charmBonus > 0 ? "+" : ""}${a.charmBonus}`, a.charmBonus > 0 ? "green" : "red"),
-        span(` Fee:`, "dim"), span(`${a.costPerMission}`, "gold"),
-        span(" Morale:", "dim"), span(`${a.morale}%`, a.morale > 50 ? "green" : "orange"),
-      ));
+      lines.push(...agentSummaryLines(a, i));
       lines.push(blank());
 
       choices.push({
         key: `${i + 1}`,
-        label: `${a.emoji} ${a.name} (${a.costPerMission} fee)`,
+        label: `${a.emoji} ${a.name} (${a.costPerMission}¤ fee)`,
         action: "SELECT_AGENT",
         data: a.id,
       });
@@ -770,7 +504,7 @@ export function buildBudgetChoices(state: GameState, mission: MissionTemplate, a
     blank(),
     line(span("  \"How much shall we invest in this venture?\"", "gold")),
     blank(),
-    indented(4, span("Available: ", "dim"), span(`${state.cash}`, "gold"), span(" (-", "dim"), span(`${agent.costPerMission}`, "orange"), span(` agent fee = `, "dim"), span(`${maxAffordable}`, "gold"), span(" max budget)", "dim")),
+    indented(4, span("Available: ", "dim"), span(cash(state.cash), "gold"), span(" (-", "dim"), span(cash(agent.costPerMission), "orange"), span(` agent fee = `, "dim"), span(cash(maxAffordable), "gold"), span(" max budget)", "dim")),
     blank(),
   ];
 
@@ -818,19 +552,16 @@ export function buildDispatchConfirmation(
 
   const lines: TerminalLine[] = [
     blank(),
-    ...THIN_DIVIDER,
-    line(span("  MISSION DISPATCH SUMMARY", "amber", true)),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("MISSION DISPATCH SUMMARY"),
     indented(4, span("Agent:    ", "dim"), span(`${agent.emoji} ${agent.name}`, "cyan", true)),
     indented(4, span("District: ", "dim"), span(`${district.emoji} ${district.name}`, "gold")),
     indented(4, span("Mission:  ", "dim"), span(mission.name, "white", true)),
-    indented(4, span("Budget:   ", "dim"), span(`${budget}`, "gold")),
-    indented(4, span("Fee:      ", "dim"), span(`${agent.costPerMission}`, "orange")),
-    indented(4, span("Total:    ", "dim"), span(`${totalCost}`, "gold", true)),
+    indented(4, span("Budget:   ", "dim"), span(cash(budget), "gold")),
+    indented(4, span("Fee:      ", "dim"), span(cash(agent.costPerMission), "orange")),
+    indented(4, span("Total:    ", "dim"), span(cash(totalCost), "gold", true)),
     indented(4, span("Posture:  ", "dim"), span(posture, posture === "theatrical" ? "purple" : posture === "reckless" ? "red" : "white")),
     blank(),
-    line(span(`  \"Shall we dispatch ${agent.name}? Total cost: ${totalCost} from our ${state.cash} treasury.\"`, "gold")),
+    line(span(`  "Shall we dispatch ${agent.name}? Total cost: ${cash(totalCost)} from our ${cash(state.cash)} treasury."`, "gold")),
     blank(),
   ];
 
@@ -848,10 +579,7 @@ export function buildDispatchMoreChoices(state: GameState): { lines: TerminalLin
 
   const lines: TerminalLine[] = [
     blank(),
-    ...THIN_DIVIDER,
-    line(span(`  Dispatched today: ${active.length} mission${active.length !== 1 ? "s" : ""}`, "amber")),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader(`Dispatched today: ${active.length} mission${active.length !== 1 ? "s" : ""}`),
   ];
 
   active.forEach(m => {
@@ -859,14 +587,14 @@ export function buildDispatchMoreChoices(state: GameState): { lines: TerminalLin
       span(`${m.agent.emoji} ${m.agent.name}`, "cyan"),
       span(" -> ", "dim"),
       span(`${m.district.emoji} ${m.template.name}`, "gold"),
-      span(` (${m.budget} + ${m.agent.costPerMission} fee, ${m.riskPosture})`, "dim"),
+      span(` (${cash(m.budget)} + ${cash(m.agent.costPerMission)} fee, ${m.riskPosture})`, "dim"),
     ));
   });
 
   lines.push(blank());
 
   if (idle.length > 0 && state.cash > 10) {
-    lines.push(line(span(`  ${idle.length} agent${idle.length !== 1 ? "s" : ""} idle, ${state.cash} in treasury.`, "dim")));
+    lines.push(line(span(`  ${idle.length} agent${idle.length !== 1 ? "s" : ""} idle, ${cash(state.cash)} in treasury.`, "dim")));
     lines.push(blank());
   }
 
@@ -971,7 +699,7 @@ export function buildMissionNarrative(mission: ActiveMission): TerminalLine[] {
       }
 
       lines.push(indented(6,
-        span(`Cost: ${step.cost}`, "gold"),
+        span(`Cost: ${cash(step.cost)}`, "gold"),
         span(` | Settlement: ${step.settlementMode}`, "teal"),
         step.receipt?.receiptId ? span(` | Receipt: ${step.receipt.receiptId}`, "dim") : span("", "dim"),
       ));
@@ -984,17 +712,7 @@ export function buildMissionNarrative(mission: ActiveMission): TerminalLine[] {
 
   // Financials
   lines.push(line(span("  Financial Summary:", "amber")));
-  lines.push(indented(4,
-    span("Spent: ", "dim"), span(`${r.moneySpent}`, "red"),
-    span("  Earned: ", "dim"), span(`${r.moneyEarned}`, "green"),
-    span("  Net: ", "dim"), span(`${r.netProfit >= 0 ? "+" : ""}${r.netProfit}`, r.netProfit >= 0 ? "green" : "red", true),
-  ));
-  if (r.reputationChange !== 0) {
-    lines.push(indented(4,
-      span("Reputation: ", "dim"),
-      span(`${r.reputationChange > 0 ? "+" : ""}${r.reputationChange}`, r.reputationChange > 0 ? "purple" : "orange"),
-    ));
-  }
+  lines.push(...financialSummaryLines(r.moneySpent, r.moneyEarned, r.netProfit, r.reputationChange));
 
   // Details
   lines.push(blank());
@@ -1036,13 +754,7 @@ export function buildDailyReport(state: GameState): TerminalLine[] {
   ];
 
   // Hakim commentary
-  if (report.netChange > 0) {
-    lines.push(indented(2, span("\"A profitable day! The ledger smiles upon us.\"", "gold")));
-  } else if (report.netChange === 0) {
-    lines.push(indented(2, span("\"We broke even. Not exciting, but not ruinous.\"", "gold")));
-  } else {
-    lines.push(indented(2, span("\"Losses today. The bazaar giveth and the bazaar taketh. Mostly taketh.\"", "gold")));
-  }
+  lines.push(indented(2, span(`"${hakimDailyComment(report.netChange)}"`, "gold")));
 
   if (report.rumors.length > 0) {
     lines.push(blank());
@@ -1053,7 +765,7 @@ export function buildDailyReport(state: GameState): TerminalLine[] {
   }
 
   lines.push(blank());
-  lines.push(indented(2, span(`Treasury: ${state.cash}  |  Reputation: ${state.reputation}/100`, "amber")));
+  lines.push(indented(2, span(`Treasury: ${cash(state.cash)}  |  Reputation: ${state.reputation}/100`, "amber")));
   lines.push(blank());
 
   return lines;
@@ -1063,14 +775,17 @@ export function buildDailyReport(state: GameState): TerminalLine[] {
 export function buildAgentRosterView(state: GameState): TerminalLine[] {
   const lines: TerminalLine[] = [
     blank(),
-    line(span("  AGENT ROSTER", "amber", true)),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("AGENT ROSTER"),
   ];
 
-  state.agents.forEach(a => {
-    const art = AGENT_ART[a.id] || [];
-    lines.push(...art);
+  state.agents.forEach((a, i) => {
+    const rarity = getAgentRarity(a);
+    lines.push(indented(4,
+      span(`${a.emoji} ${a.name}`, "cyan", true),
+      span(` — ${a.title}`, "dim"),
+      rarity.label !== "COMMON" ? span(`  [${rarity.label}]`, rarity.color, true) : span("", "dim"),
+    ));
+    lines.push(agentStatLine(a));
     lines.push(indented(4,
       span("Status: ", "dim"), span(a.status, a.status === "idle" ? "green" : "orange"),
       span("  Morale: ", "dim"), span(`${a.morale}%`, a.morale > 50 ? "green" : "red"),
@@ -1085,9 +800,7 @@ export function buildAgentRosterView(state: GameState): TerminalLine[] {
 export function buildNetworkView(state: GameState): TerminalLine[] {
   const lines: TerminalLine[] = [
     blank(),
-    line(span("  MARKET NETWORK", "amber", true)),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("MARKET NETWORK"),
     indented(4,
       span("Total transactions: ", "dim"), span(`${state.networkStats.totalTransactions}`, "white"),
       span("  Counterparties: ", "dim"), span(`${state.networkStats.counterpartiesUsed}/${state.counterparties.length}`, "teal"),
@@ -1117,9 +830,7 @@ export function buildNetworkView(state: GameState): TerminalLine[] {
 export function buildLedgerView(state: GameState): TerminalLine[] {
   const lines: TerminalLine[] = [
     blank(),
-    line(span("  RECEIPT LEDGER", "amber", true)),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("RECEIPT LEDGER"),
   ];
 
   const allReceipts = state.completedMissions
@@ -1136,7 +847,7 @@ export function buildLedgerView(state: GameState): TerminalLine[] {
         span(step.success ? "+" : "x", step.success ? "green" : "red"),
         span(` ${step.counterpartyName}`, "white"),
         span(` [${ACTION_TYPE_INFO[step.actionType].label}]`, "teal"),
-        span(` ${step.cost}`, "gold"),
+        span(` ${cash(step.cost)}`, "gold"),
         span(` ${step.settlementMode}`, step.settlementMode === "testnet" ? "teal" : "dim"),
       ));
       if (r) {
@@ -1155,9 +866,7 @@ export function buildLedgerView(state: GameState): TerminalLine[] {
 export function buildRumorsView(state: GameState): TerminalLine[] {
   const lines: TerminalLine[] = [
     blank(),
-    line(span("  RUMOR FEED", "amber", true)),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("RUMOR FEED"),
     indented(2, span("\"The gossip crows report the following...\"", "gold")),
     blank(),
   ];
@@ -1180,22 +889,11 @@ export function buildRumorsView(state: GameState): TerminalLine[] {
 
 const STELLAR_ART: TerminalLine[] = [
   blank(),
-  line(span("      ✦         ✧         ✦         ✧", "dim")),
-  line(span("          ✧         ·         ✧", "dim")),
-  line(span("   ·         ✦         ✦         ✦         ·", "dim")),
+  ...centered(renderLedger()),
   blank(),
-  line(span("", "teal")),
-  line(span("    |                                   |", "teal")),
-  title("✦ Stellar ✦", "teal", "1.4em", true),
-  line(span("    |       N E T W O R K              |", "teal")),
-  line(span("    |                                   |", "teal")),
-  line(span("    |   ◇ --- ◆ --- ◇ --- ◆ --- ◇     |", "teal")),
-  line(span("    |   |     |     |     |     |       |", "dim")),
-  line(span("    |   ◆ --- ◇ --- ◆ --- ◇ --- ◆     |", "teal")),
-  line(span("    |                                   |", "teal")),
-  line(span("", "teal")),
+  title("Stellar Network", "teal", "1.4em", true),
   blank(),
-  line(span("       A cosmic ledger written in starlight.", "dim")),
+  { spans: [{ text: "A cosmic ledger written in starlight.", color: "dim" as const }], centered: true },
   blank(),
 ];
 
@@ -1375,9 +1073,7 @@ export function hakimStellarSkipped(): TerminalLine[] {
 export function buildNFTView(state: GameState, walletAddress?: string): { lines: TerminalLine[]; choices: TerminalChoice[] } {
   const lines: TerminalLine[] = [
     blank(),
-    line(span("  AGENT NFTs", "teal", true), span(" — SEP-50", "dim")),
-    ...THIN_DIVIDER,
-    blank(),
+    ...sectionHeader("AGENT NFTs — SEP-50"),
   ];
 
   if (!walletAddress) {
@@ -1447,40 +1143,28 @@ export function buildNFTMintedLines(agentName: string, tokenId: string, txHash?:
 
 const EVENT_CATEGORY_ART: Record<string, TerminalLine[]> = {
   merchant: [
-    line(span("", "gold")),
-    line(span("    |  ◆ MERCHANT  ◆    |", "gold", true)),
-    line(span("    |    ENCOUNTER      |", "amber")),
-    line(span("", "gold")),
+    ...centered(renderMerchant()),
+    title("Merchant Encounter", "gold", "1.1em", true),
   ],
   stranger: [
-    line(span("", "purple")),
-    line(span("    |  ◇ MYSTERIOUS ◇   |", "purple", true)),
-    line(span("    |     STRANGER      |", "purple")),
-    line(span("", "purple")),
+    ...centered(renderHourglass()),
+    title("Mysterious Stranger", "purple", "1.1em", true),
   ],
   disaster: [
-    line(span("", "red")),
-    line(span("    |  ░ MARKET  ░      |", "red", true)),
-    line(span("    |   DISRUPTION      |", "orange")),
-    line(span("", "red")),
+    ...centered(renderFlames()),
+    title("Market Disruption", "red", "1.1em", true),
   ],
   celebration: [
-    line(span("", "orange")),
-    line(span("    |  ✦ CELEBRATION ✦  |", "orange", true)),
-    line(span("    |                   |", "amber")),
-    line(span("", "orange")),
+    ...centered(renderFestival()),
+    title("Celebration", "orange", "1.1em", true),
   ],
   agent: [
-    line(span("", "cyan")),
-    line(span("    |  ◆ AGENT  ◆       |", "cyan", true)),
-    line(span("    |    EVENT          |", "cyan")),
-    line(span("", "cyan")),
+    ...centered(renderShield()),
+    title("Agent Event", "cyan", "1.1em", true),
   ],
   mystery: [
-    line(span("", "purple")),
-    line(span("    |  ? ? MYSTERY ? ?  |", "purple", true)),
-    line(span("    |                   |", "purple")),
-    line(span("", "purple")),
+    ...centered(renderKey()),
+    title("Mystery", "purple", "1.1em", true),
   ],
 };
 
@@ -1610,29 +1294,49 @@ export function buildDecisionResult(choice: string, modifier: number): TerminalL
 
 export function buildEventAnnouncement(event: { name: string; description: string; type: string }): TerminalLine[] {
   const lines: TerminalLine[] = [];
+  const name = event.name.toLowerCase();
 
   // Pick art based on event type/name
-  if (event.name.toLowerCase().includes("crash")) {
+  if (name.includes("crash")) {
     lines.push(...MARKET_CRASH_ART);
     lines.push(indented(2, span("\"The market trembles. Hold onto your ledgers.\"", "gold")));
-  } else if (event.name.toLowerCase().includes("rival") || event.name.toLowerCase().includes("crimson")) {
+  } else if (name.includes("rival") || name.includes("crimson")) {
     lines.push(...RIVAL_ARRIVES_ART);
     lines.push(indented(2, span("\"Competition has arrived. The bazaar just got interesting.\"", "gold")));
-  } else if (event.name.toLowerCase().includes("festival")) {
+  } else if (name.includes("festival")) {
     lines.push(...FESTIVAL_ART);
     lines.push(indented(2, span("\"The banners are up! The criers are warmed up! Festival time!\"", "gold")));
-  } else if (event.name.toLowerCase().includes("championship")) {
-    lines.push(...ORNAMENTAL_DIVIDER);
+  } else if (name.includes("championship")) {
     lines.push(blank());
-    lines.push(line(span("  THE GRAND BAZAAR CHAMPIONSHIP", "gold", true)));
-    lines.push(line(span("  has been announced.", "amber")));
+    lines.push(...centered(renderTrophy()));
+    lines.push(title("Grand Bazaar Championship", "gold", "1.4em", true));
     lines.push(blank());
     lines.push(indented(2, span("\"This is it. The final test. Reach 80 reputation to claim the crown.\"", "gold")));
+  } else if (name.includes("tax") || name.includes("permit") || name.includes("audit")) {
+    lines.push(blank());
+    lines.push(...centered(renderTaxCollector()));
+    lines.push(title(event.name, "orange", "1.1em", true));
+  } else if (name.includes("treasure") || name.includes("discover")) {
+    lines.push(blank());
+    lines.push(...centered(renderTreasureMap()));
+    lines.push(title(event.name, "gold", "1.1em", true));
+  } else if (name.includes("gambl") || name.includes("wager") || name.includes("luck")) {
+    lines.push(blank());
+    lines.push(...centered(renderDice()));
+    lines.push(title(event.name, "amber", "1.1em", true));
+  } else if (name.includes("potion") || name.includes("elixir") || name.includes("brew")) {
+    lines.push(blank());
+    lines.push(...centered(renderPotion()));
+    lines.push(title(event.name, "green", "1.1em", true));
+  } else if (name.includes("spy") || name.includes("espionage") || name.includes("shadow")) {
+    lines.push(blank());
+    lines.push(...centered(renderSpyScene()));
+    lines.push(title(event.name, "purple", "1.1em", true));
   } else {
     // Generic event
     lines.push(...ORNAMENTAL_DIVIDER);
     lines.push(blank());
-    lines.push(line(span(`  EVENT: ${event.name}`, "amber", true)));
+    lines.push(title(event.name, "amber", "1.1em", true));
   }
 
   lines.push(blank());
@@ -1650,7 +1354,7 @@ export function buildWinScreen(state: GameState): TerminalLine[] {
     line(span("   against the Permit Goblins and their endless forms...", "gold")),
     line(span(`   ${state.brandName} has conquered the Grand Bazaar.\"`, "gold")),
     blank(),
-    indented(4, span("Final Cash: ", "dim"), span(`${state.cash}¤`, "gold", true)),
+    indented(4, span("Final Cash: ", "dim"), span(cash(state.cash), "gold", true)),
     indented(4, span("Final Reputation: ", "dim"), span(`${state.reputation}/100`, "purple", true)),
     indented(4, span("Missions Completed: ", "dim"), span(`${state.completedMissions.length}`, "white")),
     indented(4, span("Days Survived: ", "dim"), span(`${state.day}`, "amber")),
@@ -1674,7 +1378,7 @@ export function buildLoseScreen(state: GameState, reason: string): TerminalLine[
     line(span("   But every merchant who fell has risen again —", "gold")),
     line(span("   if they had the courage to try.\"", "gold")),
     blank(),
-    indented(4, span("Final Cash: ", "dim"), span(`${state.cash}¤`, "red")),
+    indented(4, span("Final Cash: ", "dim"), span(cash(state.cash), "red")),
     indented(4, span("Final Reputation: ", "dim"), span(`${state.reputation}/100`, "dim")),
     indented(4, span("Days Survived: ", "dim"), span(`${state.day}`, "amber")),
     blank(),
@@ -1709,7 +1413,7 @@ export function buildEveningHeader(day: number): TerminalLine[] {
 export function buildResumePrompt(summary: { brandName: string; day: number; cash: number; reputation: number; savedAt: string }): TerminalLine[] {
   return [
     blank(),
-    ...ORNAMENTAL_DIVIDER,
+    ...centered(renderChest()),
     blank(),
     line(span("  Hakim brushes dust off an old ledger page.", "dim")),
     blank(),
@@ -1762,4 +1466,152 @@ export function buildStellarToggleLines(isConnected: boolean, publicKey?: string
     line(span("   Real transactions. Real receipts. Play money only.\"", "gold")),
     blank(),
   ];
+}
+
+// ===============================================================
+// SHOP SCREEN
+// ===============================================================
+
+export function buildShopScreen(state: GameState): { lines: TerminalLine[]; choices: TerminalChoice[] } {
+  const shop = state.campaign?.shop ?? [];
+  const lines: TerminalLine[] = [
+    blank(),
+    ...centered(renderChest()),
+    blank(),
+    title("Hakim's Emporium", "gold", "1.4em", true),
+    blank(),
+    indented(2, span("\"Every merchant needs an edge. Browse my wares.\"", "gold")),
+    blank(),
+    ...sectionHeader("Available Items"),
+  ];
+
+  const choices: TerminalChoice[] = [];
+
+  shop.forEach((item, i) => {
+    const canBuy = item.available && !item.purchased && state.cash >= item.cost;
+    const statusLabel = item.purchased
+      ? (item.effect.duration > 0 ? ` (active: ${item.effect.duration}d)` : " (purchased)")
+      : !item.available ? " (locked)" : "";
+
+    lines.push(indented(4,
+      span(`[${i + 1}] `, "amber"),
+      span(item.name, canBuy ? "white" : "dim", canBuy),
+      span(` — ${cash(item.cost)}`, canBuy ? "gold" : "dim"),
+      span(statusLabel, item.purchased ? "green" : "dim"),
+    ));
+    lines.push(indented(6, span(item.description, "dim")));
+    lines.push(blank());
+
+    if (canBuy) {
+      choices.push({
+        key: `${i + 1}`,
+        label: `Buy ${item.name} (${cash(item.cost)})`,
+        action: "BUY_ITEM",
+        data: item.id,
+      });
+    } else {
+      choices.push({
+        key: `${i + 1}`,
+        label: item.name,
+        action: "BUY_ITEM",
+        data: item.id,
+        disabled: true,
+        disabledReason: item.purchased ? "purchased" : !item.available ? "higher rep needed" : `need ${cash(item.cost)}`,
+      });
+    }
+  });
+
+  lines.push(indented(2, span(`Treasury: ${cash(state.cash)}`, "amber")));
+  lines.push(blank());
+
+  choices.push({ key: "b", label: "Back to morning brief", action: "BACK" });
+  return { lines, choices };
+}
+
+// ===============================================================
+// AGENT QUEST DISPLAY
+// ===============================================================
+
+export function buildAgentQuestLines(state: GameState): TerminalLine[] {
+  const quests = state.campaign?.agentQuests ?? [];
+  if (quests.length === 0) return [];
+
+  const lines: TerminalLine[] = [
+    ...sectionHeader("AGENT QUESTS"),
+  ];
+
+  quests.forEach(q => {
+    const agent = state.agents.find(a => a.id === q.agentId);
+    if (!agent) return;
+
+    const progress = Math.min(q.requirement.current, q.requirement.target);
+    const barWidth = 15;
+    const filled = Math.round((progress / q.requirement.target) * barWidth);
+    const bar = "█".repeat(filled) + "░".repeat(barWidth - filled);
+
+    lines.push(indented(4,
+      span(`${agent.emoji} ${agent.name}`, "cyan", true),
+      span(` — ${q.name}`, q.completed ? "green" : "amber"),
+      q.completed ? span(" ✓ COMPLETE", "green", true) : span("", "dim"),
+    ));
+    lines.push(indented(6, span(q.description, "dim")));
+    if (!q.completed) {
+      lines.push(indented(6,
+        span("Progress: ", "dim"),
+        span(bar, progress >= q.requirement.target ? "green" : "amber"),
+        span(` ${progress}/${q.requirement.target}`, "white"),
+      ));
+    }
+    lines.push(indented(6,
+      span("Reward: ", "dim"),
+      span(q.reward.description, q.completed ? "green" : "gold"),
+    ));
+    lines.push(blank());
+  });
+
+  return lines;
+}
+
+// ===============================================================
+// RIVAL PERSONALITY DISPLAY
+// ===============================================================
+
+export function buildRivalLines(state: GameState): TerminalLine[] {
+  const campaign = state.campaign;
+  if (!campaign?.rivalBrand) return [];
+
+  const rival = campaign.rival;
+  const lines: TerminalLine[] = [];
+
+  if (rival) {
+    lines.push(indented(4,
+      span(rival.name, "purple", true),
+      span(` — ${rival.title}`, "dim"),
+    ));
+    lines.push(indented(6, span(`"${rival.catchphrase}"`, "purple")));
+    lines.push(indented(6,
+      span("Style: ", "dim"),
+      span(rival.style, "purple"),
+      rival.preferredDistrict ? span(`  Turf: ${rival.preferredDistrict}`, "dim") : span("", "dim"),
+    ));
+  } else {
+    lines.push(indented(4, span(campaign.rivalBrand, "purple", true)));
+  }
+
+  lines.push(indented(6,
+    span("Reputation: ", "dim"),
+    span(`${campaign.rivalReputation}/100`, "purple"),
+    span("  Cash: ", "dim"),
+    span(`~${cash(campaign.rivalCash)}`, "gold"),
+  ));
+
+  const repDiff = state.reputation - campaign.rivalReputation;
+  const comparison = repDiff > 10 ? "You're ahead! Keep pushing."
+    : repDiff > 0 ? "Neck and neck. Stay sharp."
+    : repDiff > -10 ? "They're pulling ahead. Act fast."
+    : "They're dominating. Time for drastic measures.";
+  lines.push(indented(6, span(comparison, repDiff >= 0 ? "green" : "orange")));
+  lines.push(blank());
+
+  return lines;
 }
