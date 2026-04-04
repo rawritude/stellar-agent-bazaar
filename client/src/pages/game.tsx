@@ -138,7 +138,7 @@ function VelvetLogo() {
       height="32"
       viewBox="0 0 32 32"
       fill="none"
-      aria-label="Velvet Ledger Bazaar logo"
+      aria-label="The Velvet Ledger logo"
       className="shrink-0"
     >
       {/* Diamond shape */}
