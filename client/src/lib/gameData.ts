@@ -124,6 +124,7 @@ export interface Agent {
   morale: number;         // 0-100
   missionsCompleted: number;
   memory: AgentMemory;    // Agent's memories and opinions
+  walletAddress?: string; // Stellar testnet address (derived from player + agent ID)
 }
 
 export interface District {

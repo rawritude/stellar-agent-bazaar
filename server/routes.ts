@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { type Server } from "http";
+import * as StellarSdk from "@stellar/stellar-sdk";
 import { StellarSettlementService } from "./stellar-settlement";
 import { AISceneGenerator } from "./ai-engine";
 import { generateX402Flow, X402_ACTION_MAP } from "./x402";
@@ -7,6 +8,8 @@ import { AgentNFTService } from "./nft-service";
 import { generateAgents } from "./agent-generator";
 import { canSpend, recordSpend, getBudgetStatus } from "./budget";
 import { saveGame, loadGame, getSaveSummary, deleteSave } from "./save-service";
+import { initializeGameMaster, getGameMaster } from "./game-master";
+import { getAgentWalletService } from "./agent-wallets";
 import { log } from "./index";
 
 // Singleton services — persist across requests
@@ -285,6 +288,121 @@ export async function registerRoutes(
       res.json({ agent });
     } catch (err: any) {
       res.json({ agent: null, error: err.message });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // GAME MASTER — RUBY token economy
+  // ═══════════════════════════════════════════════════════════════
+
+  // Initialize GM on first request (lazy)
+  let gmInitialized = false;
+
+  app.get("/api/gm/info", async (_req, res) => {
+    const gm = getGameMaster();
+    if (!gmInitialized) {
+      await gm.initialize();
+      gmInitialized = true;
+    }
+    res.json(gm.getInfo());
+  });
+
+  app.get("/api/gm/balance/:address", async (req, res) => {
+    const gm = getGameMaster();
+    if (!gmInitialized) {
+      await gm.initialize();
+      gmInitialized = true;
+    }
+    const balance = await gm.getBalance(req.params.address);
+    res.json({ address: req.params.address, balance, asset: "RUBY" });
+  });
+
+  app.post("/api/gm/mint", async (req, res) => {
+    const gm = getGameMaster();
+    if (!gmInitialized) {
+      await gm.initialize();
+      gmInitialized = true;
+    }
+    const { destination, amount } = req.body;
+    if (!destination || !amount) {
+      return res.status(400).json({ error: "Missing destination or amount" });
+    }
+
+    // Setup trustline first (for accounts we don't control, this is informational)
+    await gm.setupTrustline(destination);
+
+    const result = await gm.mintRuby(destination, Number(amount));
+    log(`GM mint: ${amount} RUBY → ${destination.slice(0, 12)}... (${result.success ? "OK" : "FAIL"})`, "stellar");
+    res.json(result);
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // AGENT WALLETS — Per-agent Stellar addresses
+  // ═══════════════════════════════════════════════════════════════
+
+  app.post("/api/agent-wallet/create", async (req, res) => {
+    const { playerPubkey, agentId } = req.body;
+    if (!playerPubkey || !agentId) {
+      return res.status(400).json({ error: "Missing playerPubkey or agentId" });
+    }
+
+    const walletService = getAgentWalletService();
+    const wallet = await walletService.createAgentWallet(playerPubkey, agentId);
+    log(`Agent wallet created: ${agentId} → ${wallet.publicKey.slice(0, 12)}...`, "stellar");
+    res.json({ publicKey: wallet.publicKey, funded: wallet.funded, agentId });
+  });
+
+  app.post("/api/agent-wallet/fund", async (req, res) => {
+    const { playerPubkey, agentId, amount } = req.body;
+    if (!playerPubkey || !agentId || !amount) {
+      return res.status(400).json({ error: "Missing playerPubkey, agentId, or amount" });
+    }
+
+    const walletService = getAgentWalletService();
+    const wallet = await walletService.createAgentWallet(playerPubkey, agentId);
+    const result = await walletService.fundAgent(wallet, Number(amount));
+    log(`Agent funded: ${amount} RUBY → ${agentId} (${result.success ? "OK" : "FAIL"})`, "stellar");
+    res.json({ ...result, agentId, walletAddress: wallet.publicKey });
+  });
+
+  app.post("/api/agent-wallet/return-surplus", async (req, res) => {
+    const { playerPubkey, agentId, playerAddress } = req.body;
+    if (!playerPubkey || !agentId || !playerAddress) {
+      return res.status(400).json({ error: "Missing playerPubkey, agentId, or playerAddress" });
+    }
+
+    const walletService = getAgentWalletService();
+    const wallet = await walletService.createAgentWallet(playerPubkey, agentId);
+    const result = await walletService.returnSurplus(wallet, playerAddress);
+    log(`Surplus returned: ${result.amount} RUBY from ${agentId} → player (${result.success ? "OK" : "FAIL"})`, "stellar");
+    res.json(result);
+  });
+
+  app.get("/api/agent-wallet/balance/:playerPubkey/:agentId", async (req, res) => {
+    const { playerPubkey, agentId } = req.params;
+    const walletService = getAgentWalletService();
+    const wallet = await walletService.createAgentWallet(playerPubkey, agentId);
+    const balance = await walletService.getBalance(wallet);
+    res.json({ agentId, walletAddress: wallet.publicKey, balance, asset: "RUBY" });
+  });
+
+  app.post("/api/gm/add-trustline", async (req, res) => {
+    const gm = getGameMaster();
+    if (!gmInitialized) {
+      await gm.initialize();
+      gmInitialized = true;
+    }
+    const { secretKey } = req.body;
+    if (!secretKey) {
+      return res.status(400).json({ error: "Missing secretKey" });
+    }
+
+    try {
+      const kp = StellarSdk.Keypair.fromSecret(secretKey);
+      const success = await gm.addTrustline(kp);
+      res.json({ success, address: kp.publicKey() });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
     }
   });
 
