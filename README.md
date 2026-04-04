@@ -302,37 +302,6 @@ docs/
 
 ---
 
-## Tech Stack
-
-| Layer | Tech |
-|-------|------|
-| Frontend | React 19 + Vite + TypeScript |
-| Terminal UI | Custom renderer with braille art, CSS panels, CRT effects |
-| Backend | Express + SQLite |
-| AI | Claude Haiku (via Anthropic API with tool_use) |
-| Blockchain | Stellar SDK + Smart Account Kit + Soroban |
-| Wallet | WebAuthn passkeys (no seed phrases) |
-| Font | JetBrains Mono (Google Fonts) |
-
----
-
-## Design Philosophy
-
-```
-  CSS      for borders, panels, glow, layout     (never breaks)
-  BRAILLE  for illustrations and scene art        (32 vector assets)
-  TEXT     for content, dialogue, stats            (colored spans)
-  EMOJI    for inline icons                        (not art)
-```
-
-Two screen modes:
-- **Panel screens** (data/management) -- CSS grid layouts with bordered panels
-- **Text screens** (story/narrative) -- braille art + typewriter effect + animations
-
-See [docs/DESIGN_GUIDELINES.md](docs/DESIGN_GUIDELINES.md) for the full visual design system.
-
----
-
 ## Contributing
 
 The game is designed for easy content additions:
