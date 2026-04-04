@@ -122,16 +122,70 @@ export function clampModifier(value: any): number {
 }
 
 /**
+ * Fuzzy-match an enum value: lowercase, strip whitespace/underscores,
+ * and pick the closest match from the valid set.
+ */
+function fuzzyMatchEnum<T extends string>(value: any, valid: T[], fallback: T): T {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.toLowerCase().replace(/[\s_-]+/g, "_").trim();
+  // Exact match first
+  if (valid.includes(normalized as T)) return normalized as T;
+  // Prefix match (e.g., "proceed" -> "proceed_normally")
+  const prefixMatch = valid.find((v) => v.startsWith(normalized));
+  if (prefixMatch) return prefixMatch;
+  // Contains match (e.g., "walk" -> "walk_away")
+  const containsMatch = valid.find((v) => v.includes(normalized) || normalized.includes(v));
+  if (containsMatch) return containsMatch;
+  return fallback;
+}
+
+/**
+ * Try to extract JSON from a string that may contain markdown fences or prose.
+ * Returns the parsed object, or null if extraction fails.
+ */
+export function extractJSON(text: string): any | null {
+  // Strip markdown code fences: ```json ... ``` or ``` ... ```
+  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  const cleaned = fenceMatch ? fenceMatch[1].trim() : text.trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Try to find a JSON object in the text
+    const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (objectMatch) {
+      try {
+        return JSON.parse(objectMatch[0]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+}
+
+/**
  * Validate and sanitize the LLM's structured output.
- * Returns null if the output is fundamentally invalid.
- * Clamps/truncates values that are out of bounds.
+ * Returns { scene, issues } where issues lists any corrections made.
+ * Returns null scene only if the output is fundamentally unusable
+ * (no dialogue at all).
  */
 export function validateSceneResult(raw: any): SceneResult | null {
+  // If raw is a string (shouldn't happen with tool_use, but just in case),
+  // try to extract JSON from it
+  if (typeof raw === "string") {
+    raw = extractJSON(raw);
+  }
   if (!raw || typeof raw !== "object") return null;
 
-  // Validate dialogue
-  if (!Array.isArray(raw.dialogue) || raw.dialogue.length === 0) return null;
-  const dialogue: DialogueLine[] = raw.dialogue
+  // Validate dialogue — this is the one hard requirement
+  let dialogueSource = raw.dialogue;
+  // Handle cases where dialogue might be nested or named differently
+  if (!Array.isArray(dialogueSource)) {
+    dialogueSource = raw.lines ?? raw.dialog ?? raw.conversation;
+  }
+  if (!Array.isArray(dialogueSource) || dialogueSource.length === 0) return null;
+
+  const dialogue: DialogueLine[] = dialogueSource
     .slice(0, 10)
     .filter((d: any) => d && typeof d.speaker === "string" && typeof d.line === "string")
     .map((d: any) => ({
@@ -140,9 +194,13 @@ export function validateSceneResult(raw: any): SceneResult | null {
     }));
   if (dialogue.length === 0) return null;
 
-  // Validate enums
-  if (!VALID_DECISIONS.includes(raw.agent_decision)) return null;
-  if (!VALID_REACTIONS.includes(raw.counterparty_reaction)) return null;
+  // Fuzzy-match enums with sensible defaults instead of rejecting
+  const agent_decision = fuzzyMatchEnum(
+    raw.agent_decision, VALID_DECISIONS, "proceed_normally"
+  );
+  const counterparty_reaction = fuzzyMatchEnum(
+    raw.counterparty_reaction, VALID_REACTIONS, "neutral"
+  );
 
   // Validate optional decision point
   let decision_point: DecisionPoint | undefined;
@@ -168,15 +226,15 @@ export function validateSceneResult(raw: any): SceneResult | null {
 
   return {
     dialogue,
-    agent_decision: raw.agent_decision,
+    agent_decision,
     agent_reasoning: typeof raw.agent_reasoning === "string"
       ? raw.agent_reasoning.slice(0, 200)
-      : "",
-    counterparty_reaction: raw.counterparty_reaction,
+      : (typeof raw.reasoning === "string" ? raw.reasoning.slice(0, 200) : ""),
+    counterparty_reaction,
     outcome_modifier: clampModifier(raw.outcome_modifier),
     flavor_detail: typeof raw.flavor_detail === "string"
       ? raw.flavor_detail.slice(0, 200)
-      : "",
+      : (typeof raw.detail === "string" ? raw.detail.slice(0, 200) : ""),
     decision_point,
   };
 }
@@ -222,6 +280,62 @@ export class RateLimiter {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// FALLBACK SCENE GENERATION
+// ═══════════════════════════════════════════════════════════════
+
+const FALLBACK_DIALOGUES: DialogueLine[][] = [
+  [
+    { speaker: "Agent", line: "I believe we can reach an arrangement that benefits both parties." },
+    { speaker: "Counterparty", line: "Perhaps. Let me hear what you're proposing." },
+    { speaker: "Agent", line: "Consider the terms — fair market value, plus a small sweetener for your trouble." },
+    { speaker: "Counterparty", line: "Hmm. I've heard worse. Let's talk numbers." },
+  ],
+  [
+    { speaker: "Agent", line: "The market's been volatile. We both know what that means for pricing." },
+    { speaker: "Counterparty", line: "It means I should charge you more, obviously." },
+    { speaker: "Agent", line: "Or it means we lock in a deal now before things shift further." },
+  ],
+  [
+    { speaker: "Agent", line: "I've been authorized to make this worth your while." },
+    { speaker: "Counterparty", line: "Everyone says that. Few deliver." },
+    { speaker: "Agent", line: "Then let me be among the few. Here's what I have in mind." },
+    { speaker: "Counterparty", line: "...Go on." },
+  ],
+];
+
+/**
+ * Generate a fallback scene when AI fails or is unavailable.
+ * Uses the request context to personalize generic dialogue templates.
+ */
+export function buildFallbackScene(request: SceneRequest): SceneResult {
+  const template = FALLBACK_DIALOGUES[
+    Math.floor(Math.random() * FALLBACK_DIALOGUES.length)
+  ];
+  // Replace generic speaker names with actual character names
+  const dialogue = template.map((line) => ({
+    speaker: line.speaker === "Agent" ? request.agentName : request.counterpartyName,
+    line: line.line,
+  }));
+
+  // Pick decision/reaction based on posture for slight variety
+  const postureMap: Record<string, AgentDecision> = {
+    aggressive: "push_harder",
+    cautious: "proceed_normally",
+    friendly: "accept_terms",
+  };
+  const agent_decision = postureMap[request.posture] ?? "proceed_normally";
+
+  return {
+    dialogue,
+    agent_decision,
+    agent_reasoning: `${request.agentName} reads the room and adapts.`,
+    counterparty_reaction: "neutral",
+    outcome_modifier: 0,
+    flavor_detail: `The air in ${request.districtName} smells faintly of ozone and ambition.`,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // AI SCENE GENERATOR
 // ═══════════════════════════════════════════════════════════════
 
@@ -254,16 +368,24 @@ export class AISceneGenerator {
 
   /**
    * Generate a scene for a bazaar interaction.
-   * Returns AI-generated scene if available, null if not.
-   * Never throws — always returns a response.
+   * Returns AI-generated scene if available, falls back to template if not.
+   * Never throws — always returns a response with a usable scene.
    */
   async generateScene(request: SceneRequest): Promise<GenerateSceneResponse> {
     if (!this.client) {
-      return { scene: null, fromAI: false, error: "ANTHROPIC_API_KEY not configured" };
+      return {
+        scene: buildFallbackScene(request),
+        fromAI: false,
+        error: "ANTHROPIC_API_KEY not configured (using fallback scene)",
+      };
     }
 
     if (!this.limiter.canCall()) {
-      return { scene: null, fromAI: false, error: "Rate limit reached for this session" };
+      return {
+        scene: buildFallbackScene(request),
+        fromAI: false,
+        error: "Rate limit reached for this session (using fallback scene)",
+      };
     }
 
     try {
@@ -295,10 +417,27 @@ export class AISceneGenerator {
       );
 
       if (!toolBlock) {
+        // Try to extract from text blocks as a last resort
+        const textBlock = response.content.find(
+          (block): block is Anthropic.TextBlock => block.type === "text"
+        );
+        if (textBlock) {
+          const extracted = extractJSON(textBlock.text);
+          if (extracted) {
+            const validated = validateSceneResult(extracted);
+            if (validated) {
+              return {
+                scene: validated,
+                fromAI: true,
+                tokensUsed: { input: inputTokens, output: outputTokens },
+              };
+            }
+          }
+        }
         return {
-          scene: null,
-          fromAI: true,
-          error: "No tool_use in response",
+          scene: buildFallbackScene(request),
+          fromAI: false,
+          error: "No tool_use block in AI response; used fallback scene",
           tokensUsed: { input: inputTokens, output: outputTokens },
         };
       }
@@ -306,10 +445,26 @@ export class AISceneGenerator {
       // Validate the structured output
       const validated = validateSceneResult(toolBlock.input);
       if (!validated) {
+        // Build a descriptive error explaining what went wrong
+        const input = toolBlock.input as any;
+        const issues: string[] = [];
+        if (!input || typeof input !== "object") {
+          issues.push("tool input is not an object");
+        } else {
+          if (!Array.isArray(input.dialogue) || input.dialogue.length === 0)
+            issues.push("dialogue missing or empty");
+          else {
+            const validLines = input.dialogue.filter(
+              (d: any) => d && typeof d.speaker === "string" && typeof d.line === "string"
+            );
+            if (validLines.length === 0) issues.push("no valid dialogue lines (missing speaker/line fields)");
+          }
+        }
+
         return {
-          scene: null,
-          fromAI: true,
-          error: "Response failed validation",
+          scene: buildFallbackScene(request),
+          fromAI: false,
+          error: `AI response failed validation: ${issues.join("; ") || "unknown structure issue"}. Used fallback scene.`,
           tokensUsed: { input: inputTokens, output: outputTokens },
         };
       }
@@ -321,9 +476,9 @@ export class AISceneGenerator {
       };
     } catch (err: any) {
       return {
-        scene: null,
+        scene: buildFallbackScene(request),
         fromAI: false,
-        error: `AI call failed: ${err.message}`,
+        error: `AI call failed: ${err.message} (using fallback scene)`,
       };
     }
   }

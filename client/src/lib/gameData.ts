@@ -238,7 +238,7 @@ export interface AgentQuest {
   name: string;
   description: string;
   requirement: { type: "missions" | "reputation" | "counterparty_trust"; target: number; current: number };
-  reward: { type: "stat_boost" | "cost_reduction" | "unlock_ability"; value: number; description: string };
+  reward: { type: "stat_boost" | "cost_reduction"; value: number; description: string };
   completed: boolean;
 }
 

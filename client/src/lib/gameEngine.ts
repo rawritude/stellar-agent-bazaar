@@ -97,7 +97,7 @@ export function createInitialState(brandName: string = "The Velvet Ledger"): Gam
       upkeepPerDay: 6,
       isGameOver: false,
       hasWon: false,
-      shop: [],
+      shop: generateShopItems(),
       agentQuests: [],
       unlockedCounterparties: [],
     },
@@ -470,9 +470,19 @@ async function resolveSingleMission(
   activeEvents: ActiveEvent[] = [],
   playerPubkey?: string,
 ): Promise<{ result: MissionResult; updatedCounterparties: Counterparty[] }> {
-  const successChance = calculateSuccessChance(mission);
-  const success = roll(successChance);
+  let successChance = calculateSuccessChance(mission);
   const { agent, template, budget, riskPosture, district } = mission;
+
+  // Apply danger modifiers from active events
+  for (const event of activeEvents) {
+    for (const effect of event.effects) {
+      if (effect.type === "danger_modifier" && (!effect.target || effect.target === district.id)) {
+        successChance -= effect.value * 0.05;
+      }
+    }
+  }
+  successChance = clamp(successChance, 0.1, 0.95);
+  const success = roll(successChance);
 
   // Wild outcome chance (from agent risk factor + posture)
   const wildChance = agent.riskFactor + (riskPosture === "theatrical" ? 0.2 : riskPosture === "reckless" ? 0.15 : 0);
@@ -526,6 +536,7 @@ async function resolveSingleMission(
   // Apply event modifiers
   let eventRewardMod = 1.0;
   let eventRepMod = 1.0;
+  let eventDangerMod = 0;
   for (const event of activeEvents) {
     for (const effect of event.effects) {
       if (effect.type === "price_modifier" && (!effect.target || effect.target === district.id)) {
@@ -534,13 +545,16 @@ async function resolveSingleMission(
       if (effect.type === "reputation_modifier") {
         eventRepMod *= effect.value;
       }
+      if (effect.type === "danger_modifier" && (!effect.target || effect.target === district.id)) {
+        eventDangerMod += effect.value;
+      }
     }
   }
 
   if (success) {
     const rewardMultiplier = isWild
-      ? (1.3 + Math.random() * 0.7)
-      : (0.7 + stepSuccessRate * 0.5);
+      ? (1.1 + Math.random() * 0.5)
+      : (0.6 + stepSuccessRate * 0.4);
     moneyEarned = Math.round(template.baseReward * rewardMultiplier * eventRewardMod);
 
     headline = isWild ? pick(POSITIVE_HEADLINES) : pick(NEUTRAL_HEADLINES);
@@ -553,8 +567,8 @@ async function resolveSingleMission(
     }
     details.push(`${agent.name} cost ${totalDeducted}¤ (${budget}¤ budget + ${agent.costPerMission}¤ fee) and returned ${moneyEarned}¤.`);
   } else {
-    // On failure, earn a small consolation amount
-    moneyEarned = Math.round(template.baseReward * (0.05 + Math.random() * 0.15));
+    // On failure, earn a small consolation amount (less generous)
+    moneyEarned = Math.round(template.baseReward * (0.03 + Math.random() * 0.10));
 
     headline = isWild ? pick(NEGATIVE_HEADLINES) : pick(NEUTRAL_HEADLINES);
     reputationChange = Math.round((isWild ? -3 : -1) * district.reputationModifier);
@@ -857,7 +871,7 @@ export function advanceDay(state: GameState): GameState {
     ...defaultCampaign,
     ...state.campaign,
     week,
-    upkeepPerDay: 6 + (week - 1) * 1, // 6, 7, 8, 9 per week (gentler curve)
+    upkeepPerDay: 6 + (week - 1) * 2 + Math.floor(state.reputation / 40), // Scales: week (6/8/10/12) + rep tier (0-2)
   };
 
   // Add rival in week 2 (with personality)
@@ -869,10 +883,11 @@ export function advanceDay(state: GameState): GameState {
     campaign.rivalCash = 150;
   }
 
-  // Rival grows each day + interference
+  // Rival grows each day + interference (faster in later weeks)
   if (campaign.rivalBrand) {
-    campaign.rivalReputation = clamp(campaign.rivalReputation + (roll(0.6) ? 2 : 1), 0, 100);
-    campaign.rivalCash += Math.round(5 + Math.random() * 10);
+    const rivalGrowth = week >= 3 ? (roll(0.6) ? 3 : 2) : (roll(0.6) ? 2 : 1);
+    campaign.rivalReputation = clamp(campaign.rivalReputation + rivalGrowth, 0, 100);
+    campaign.rivalCash += Math.round(5 + Math.random() * 10) + (week - 2) * 3;
 
     // Rival interference (blocked by ward charm)
     const hasProtection = (campaign.shop ?? []).some(
@@ -909,10 +924,11 @@ export function advanceDay(state: GameState): GameState {
     newLogs.push(endCheck.reason);
   }
 
-  // 9. Reputation naturally decays (-1/day) — you must actively maintain it
-  let repPenalty = -1;
-  if (upkeep.cash <= 0) repPenalty = -2; // softer penalty when broke
-  newLogs.push("Reputation fades slightly without active marketing (-1)");
+  // 9. Reputation naturally decays — higher rep = harder to maintain
+  const repTier = Math.floor(state.reputation / 30); // 0-3
+  let repPenalty = -(1 + Math.floor(repTier / 2)); // -1 below 60, -2 at 60+, -3 at 90+
+  if (upkeep.cash <= 0) repPenalty -= 2;
+  newLogs.push(`Reputation fades without active marketing (${repPenalty})`);
 
   // 10. Comeback mechanic: emergency patron loan when broke
   if (upkeep.cash <= 0 && state.reputation >= 10) {
@@ -1003,11 +1019,14 @@ export function updateCounterpartyTrust(
   success: boolean,
   day: number,
 ): Counterparty {
-  let trustDelta = success ? 5 : -8;
+  let trustDelta = success ? 3 : -5;
 
   // Mood affects how much trust changes
-  if (cp.mood === "hostile") trustDelta -= 3;
-  if (cp.mood === "cooperative") trustDelta += 2;
+  if (cp.mood === "hostile") trustDelta -= 2;
+  if (cp.mood === "cooperative") trustDelta += 1;
+
+  // Diminishing returns — trust gains slow as trust grows
+  if (trustDelta > 0 && cp.trust > 50) trustDelta = Math.max(1, trustDelta - 1);
 
   const newTrust = clamp(cp.trust + trustDelta, -100, 100);
 
@@ -1046,8 +1065,8 @@ export function updateAgentOpinion(
   const memory = { ...agentMemory, opinions: [...(agentMemory.opinions || [])] };
   const existing = memory.opinions.find(o => o.counterpartyId === counterpartyId);
 
-  const trustDelta = success ? 8 : -12;
-  const wildBonus = wasWild ? (success ? 5 : -10) : 0;
+  const trustDelta = success ? 5 : -8;
+  const wildBonus = wasWild ? (success ? 3 : -7) : 0;
 
   if (existing) {
     existing.trust = clamp(existing.trust + trustDelta + wildBonus, -100, 100);
@@ -1285,7 +1304,7 @@ export function getCampaignEvent(day: number, state: GameState): ActiveEvent | n
  */
 export function checkCampaignEnd(state: GameState): { isOver: boolean; hasWon: boolean; reason: string } {
   if (state.day >= 30) {
-    if (state.reputation >= 80 && state.cash > 50) {
+    if (state.reputation >= 80 && state.cash >= 50) {
       return { isOver: true, hasWon: true, reason: "You've won the Grand Bazaar Championship! Your brand is legendary." };
     }
     return { isOver: true, hasWon: false, reason: `Campaign over. Final reputation: ${state.reputation}/100, cash: ${state.cash}¤. You needed 80 rep and 50¤ to win.` };

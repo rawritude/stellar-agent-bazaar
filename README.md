@@ -88,7 +88,7 @@ RUBY_SAC_ADDRESS=C...           # RUBY token SAC address (auto-deployed if stell
                    Random events fire. Reputation decays. Repeat.
 ```
 
-**Win condition:** Reach 80 reputation and 50 cash by Day 30.
+**Win condition:** Reach 80 reputation and 50¤ cash by Day 30. Cautious play can get you there — but it won't be easy.
 
 **Lose condition:** Go bankrupt with no reputation. The bazaar moves on without you.
 
@@ -322,12 +322,12 @@ Each agent has a personal quest based on their specialty. Complete missions or h
 
 ### 30-Day Campaign Arc
 
-| Week | Events |
-|------|--------|
-| 1 | Establish your brand. Learn the ropes. |
-| 2 | Rival appears. Competition heats up. |
-| 3 | Market crash. Prices tank. Survive. |
-| 4 | Championship finals. Reach 80 rep to win. |
+| Week | Events | Difficulty |
+|------|--------|------------|
+| 1 | Establish your brand. Learn the ropes. | Upkeep: 6¤/day |
+| 2 | Rival appears. Competition heats up. | Upkeep: 8¤/day |
+| 3 | Market crash. Prices tank. Survive. | Upkeep: 10¤/day, rival accelerates |
+| 4 | Championship finals. Reach 80 rep to win. | Upkeep: 12¤/day, rep decays faster |
 
 ---
 
@@ -364,12 +364,13 @@ server/
   agent-wallets.ts        -- Agent/counterparty/rival wallet derivation + funding
   mpp-services.ts         -- Real MPP-protected counterparty service endpoints
   mpp-agent.ts            -- Agent-side MPP client (negotiation + payment)
-  ai-engine.ts            -- Claude Haiku scene generation with guardrails
+  ai-engine.ts            -- Claude Haiku scene generation with guardrails + fallback
   agent-generator.ts      -- AI agent creation with server-side rarity
   stellar-settlement.ts   -- Direct Stellar testnet payments (fallback)
   x402.ts                 -- x402/MPP display flow generator
   save-service.ts         -- SQLite save/load by wallet address
   nft-service.ts          -- Soroban NFT contract interaction
+  routes.ts               -- All API endpoints (GM, MPP, wallets, AI, save/load)
 contracts/
   agent-nft/              -- Rust Soroban smart contract for SEP-50 NFTs
 docs/

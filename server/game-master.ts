@@ -9,6 +9,7 @@
 
 import * as StellarSdk from "@stellar/stellar-sdk";
 import { execSync } from "child_process";
+import { deriveCounterpartyKeypair } from "./agent-wallets";
 
 const HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
 const FRIENDBOT_URL = "https://friendbot.stellar.org";
@@ -75,14 +76,22 @@ export class GameMaster {
         console.log(`[GM] Funded via friendbot`);
         return true;
       }
-      // May already be funded
+      // May already be funded — friendbot returns various error messages
       const body = await res.json().catch(() => null);
-      if (body?.detail?.includes("createAccountAlreadyExist")) {
+      const detail = body?.detail || "";
+      if (detail.includes("createAccountAlreadyExist") || detail.includes("already funded")) {
         this.funded = true;
         console.log(`[GM] Already funded`);
         return true;
       }
-      console.warn(`[GM] Friendbot returned ${res.status}`);
+      // Also check if account exists directly
+      try {
+        await this.server.loadAccount(this.keypair.publicKey());
+        this.funded = true;
+        console.log(`[GM] Account exists on testnet`);
+        return true;
+      } catch {}
+      console.warn(`[GM] Friendbot returned ${res.status}: ${detail}`);
       return false;
     } catch (err: any) {
       console.error(`[GM] Fund failed:`, err.message);
@@ -90,38 +99,40 @@ export class GameMaster {
     }
   }
 
-  /** Ensure a destination account exists and has a RUBY trustline */
+  /**
+   * Ensure a destination account exists.
+   * For classic accounts, checks/creates via friendbot.
+   * Smart accounts (Soroban contracts) don't need trustlines — they use the SAC.
+   */
   async setupTrustline(destinationPubkey: string): Promise<boolean> {
     try {
-      // First ensure the account exists
+      // Check if this is a classic account (G...) or contract (C...)
+      if (destinationPubkey.startsWith("C")) {
+        // Smart contract / SAC address — no trustline needed
+        console.log(`[GM] ${destinationPubkey.slice(0, 12)}... is a contract — no trustline needed`);
+        return true;
+      }
+
+      // Classic account — ensure it exists
       try {
         await this.server.loadAccount(destinationPubkey);
       } catch {
-        // Account doesn't exist — fund via friendbot
         const res = await fetch(`${FRIENDBOT_URL}?addr=${destinationPubkey}`);
         if (!res.ok) {
           const body = await res.json().catch(() => null);
-          if (!body?.detail?.includes("createAccountAlreadyExist")) {
+          const detail = body?.detail || "";
+          if (!detail.includes("createAccountAlreadyExist") && !detail.includes("already funded")) {
             console.error(`[GM] Cannot fund ${destinationPubkey.slice(0, 12)}...`);
             return false;
           }
         }
       }
 
-      // Check if trustline already exists
-      const account = await this.server.loadAccount(destinationPubkey);
-      const hasTrustline = account.balances.some(
-        (b: any) => b.asset_code === RUBY_CODE && b.asset_issuer === this.keypair.publicKey()
-      );
-      if (hasTrustline) return true;
-
-      // Trustline must be set by the destination account itself.
-      // For testnet demo purposes, we'll skip this for now and
-      // handle it in the agent wallet service where we control the keypair.
-      console.log(`[GM] Account ${destinationPubkey.slice(0, 12)}... needs RUBY trustline`);
+      // For classic accounts we don't control, we can't add the trustline.
+      // mintRuby will try classic payment first, then fall back to SAC invocation.
       return true;
     } catch (err: any) {
-      console.error(`[GM] Trustline setup failed:`, err.message);
+      console.error(`[GM] Setup failed:`, err.message);
       return false;
     }
   }
@@ -164,7 +175,8 @@ export class GameMaster {
 
   /**
    * Mint RUBY tokens to a destination.
-   * The GM is the issuer — "minting" is just a payment from issuer.
+   * For classic accounts (with trustlines): uses classic payment from issuer.
+   * For smart accounts (Soroban contracts): uses SAC contract invocation.
    */
   async mintRuby(destination: string, amount: number): Promise<{ success: boolean; txHash?: string }> {
     if (!this.funded) {
@@ -172,6 +184,7 @@ export class GameMaster {
       return { success: false };
     }
 
+    // Try classic payment first (works for accounts with RUBY trustlines)
     try {
       const account = await this.server.loadAccount(this.keypair.publicKey());
       const amountStr = amount.toFixed(RUBY_DECIMALS);
@@ -197,8 +210,47 @@ export class GameMaster {
 
       console.log(`[GM] Minted ${amount} RUBY → ${destination.slice(0, 12)}... (TX: ${txHash.slice(0, 12)}...)`);
       return { success: true, txHash };
+    } catch (classicErr: any) {
+      // Classic payment failed — destination may be a smart account (no trustline needed for SAC)
+      if (this.rubySACAddress) {
+        return this.mintViaSAC(destination, amount);
+      }
+      console.error(`[GM] Mint failed:`, classicErr.message);
+      return { success: false };
+    }
+  }
+
+  /**
+   * Mint RUBY to a smart account via SAC contract invocation.
+   * Smart accounts don't need trustlines — the SAC handles token balances.
+   */
+  private async mintViaSAC(destination: string, amount: number): Promise<{ success: boolean; txHash?: string }> {
+    if (!this.rubySACAddress) return { success: false };
+
+    try {
+      // Use stellar CLI to invoke the SAC transfer
+      // The GM (issuer) transfers RUBY to the destination via the SAC contract
+      const amountStroops = Math.round(amount * 10_000_000); // 7 decimal places
+      const output = execSync(
+        `stellar contract invoke \
+          --id ${this.rubySACAddress} \
+          --source-account velvet-ledger-gm \
+          --network testnet \
+          -- transfer \
+          --from ${this.keypair.publicKey()} \
+          --to ${destination} \
+          --amount ${amountStroops} 2>&1`,
+        { encoding: "utf-8", timeout: 30000 }
+      ).trim();
+
+      // Try to extract tx hash from output
+      const txMatch = output.match(/([a-f0-9]{64})/i);
+      const txHash = txMatch ? txMatch[1] : undefined;
+
+      console.log(`[GM] Minted ${amount} RUBY via SAC → ${destination.slice(0, 12)}...${txHash ? ` (TX: ${txHash.slice(0, 12)}...)` : ""}`);
+      return { success: true, txHash };
     } catch (err: any) {
-      console.error(`[GM] Mint failed:`, err.message);
+      console.error(`[GM] SAC mint failed:`, err.message?.slice(0, 200));
       return { success: false };
     }
   }
@@ -226,7 +278,8 @@ export class GameMaster {
         const res = await fetch(`${FRIENDBOT_URL}?addr=${kp.publicKey()}`);
         if (!res.ok) {
           const body = await res.json().catch(() => null);
-          if (!body?.detail?.includes("createAccountAlreadyExist")) {
+          const detail = body?.detail || "";
+          if (!detail.includes("createAccountAlreadyExist") && !detail.includes("already funded")) {
             console.warn(`[GM] Cannot fund counterparty ${id}`);
             continue;
           }
@@ -272,8 +325,8 @@ export class GameMaster {
       try {
         execSync(`stellar keys address velvet-ledger-gm`, { stdio: "pipe" });
       } catch {
-        // Add the GM key to stellar CLI
-        execSync(`stellar keys add velvet-ledger-gm --secret-key ${this.keypair.secret()}`, { stdio: "pipe" });
+        // Add the GM key to stellar CLI — pipe secret via stdin since --secret-key is interactive
+        execSync(`echo "${this.keypair.secret()}" | stellar keys add velvet-ledger-gm --secret-key`, { stdio: "pipe", shell: "/bin/bash" });
         console.log(`[GM] Added GM identity to stellar CLI`);
       }
 
@@ -333,6 +386,20 @@ export class GameMaster {
     } else {
       console.warn(`[GM] RUBY SAC not available — MPP will fall back to XLM`);
     }
+
+    // Fund counterparty wallets (non-blocking — log warnings on failure)
+    const counterpartyIds = [
+      "madame-lentil", "guild-of-ledgers", "fungal-permits", "whisper-network",
+      "cart-mule-logistics", "magnifying-order", "crows-associates", "shadow-desk",
+      "festival-criers",
+    ];
+    const cpKeypairs = new Map<string, StellarSdk.Keypair>();
+    for (const id of counterpartyIds) {
+      cpKeypairs.set(id, deriveCounterpartyKeypair(id));
+    }
+    this.fundCounterparties(cpKeypairs, 1000).catch(err => {
+      console.warn(`[GM] Counterparty funding failed (non-blocking):`, err.message);
+    });
 
     console.log(`[GM] Game Master ready. RUBY issuer: ${this.keypair.publicKey()}`);
     console.log(`[GM] Explorer: ${EXPLORER_BASE}/account/${this.keypair.publicKey()}`);

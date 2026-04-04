@@ -204,8 +204,12 @@ export async function handleMppService(
     if (result.status === 402) {
       // Return the 402 challenge — client needs to pay
       const challengeResponse = result.challenge;
+      if (!challengeResponse) {
+        res.writeHead(402, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Payment required", amount: priceStr }));
+        return;
+      }
       res.writeHead(402);
-      // Copy headers from the challenge Response
       challengeResponse.headers.forEach((value: string, key: string) => {
         res.setHeader(key, value);
       });
@@ -226,28 +230,51 @@ export async function handleMppService(
       greed,
     });
 
-    // Wrap the response with MPP receipt
-    const serviceResponse = Response.json({
+    const responsePayload = JSON.stringify({
       service: serviceResult,
       price: parseFloat(priceStr),
       actionType,
       counterpartyId,
     });
 
-    const receiptResponse = result.withReceipt(serviceResponse);
-    res.writeHead(200, { "Content-Type": "application/json" });
-
-    // Extract receipt headers
-    receiptResponse.headers.forEach((value: string, key: string) => {
-      res.setHeader(key, value);
-    });
-
-    const responseBody = await receiptResponse.text();
-    res.end(responseBody);
+    // Wrap the response with MPP receipt if available
+    if (result.withReceipt) {
+      const serviceResponse = new Response(responsePayload, {
+        headers: { "Content-Type": "application/json" },
+      });
+      const receiptResponse = result.withReceipt(serviceResponse);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      receiptResponse.headers.forEach((value: string, key: string) => {
+        res.setHeader(key, value);
+      });
+      const responseBody = await receiptResponse.text();
+      res.end(responseBody);
+    } else {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(responsePayload);
+    }
   } catch (err: any) {
     console.error(`[mpp] Service error (${actionType}):`, err.message);
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
+    // Fall back to simulated result instead of hard 500
+    const serviceHandler = SERVICE_HANDLERS[actionType] || deliverIntel;
+    const serviceResult = serviceHandler({
+      agentId,
+      agentName: agentName || agentId,
+      counterpartyId,
+      counterpartyName: counterpartyName || counterpartyId,
+      trust,
+      mood,
+      greed,
+    });
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      service: serviceResult,
+      price: parseFloat(priceStr),
+      actionType,
+      counterpartyId,
+      fallback: true,
+      error: err.message,
+    }));
   }
 }
 

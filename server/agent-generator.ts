@@ -144,10 +144,30 @@ Generate using the generate_agents tool.`,
     (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
   );
 
-  if (!toolBlock) throw new Error("No tool_use response from AI");
+  let input: any;
 
-  const input = toolBlock.input as any;
-  if (!Array.isArray(input.agents)) throw new Error("Invalid agents array");
+  if (toolBlock) {
+    input = toolBlock.input as any;
+  } else {
+    // Fallback: try to extract JSON from a text block
+    const { extractJSON } = await import("./ai-engine");
+    const textBlock = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === "text"
+    );
+    if (textBlock) {
+      input = extractJSON(textBlock.text);
+    }
+    if (!input) throw new Error("No tool_use block in AI response and could not extract JSON from text");
+  }
+
+  if (!Array.isArray(input.agents)) {
+    // Try alternative shapes: maybe it returned a top-level array
+    if (Array.isArray(input)) {
+      input = { agents: input };
+    } else {
+      throw new Error(`Invalid agents structure: expected { agents: [...] }, got keys: ${Object.keys(input || {}).join(", ")}`);
+    }
+  }
 
   // Step 3: Validate and clamp to tier ranges
   const validated: GeneratedAgent[] = [];

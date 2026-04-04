@@ -141,7 +141,7 @@ export function StatBar({
   color?: TerminalColor;
   width?: number;
 }) {
-  const filled = Math.round((value / max) * width);
+  const filled = max <= 0 ? 0 : Math.round((Math.min(value, max) / max) * width);
   const bar = "█".repeat(filled) + "░".repeat(width - filled);
 
   return (

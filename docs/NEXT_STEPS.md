@@ -2,124 +2,75 @@
 
 This document lists the work that should happen next in priority order.
 
+All previous priorities (settlement adapters, receipt ledger, content registries, event packs, persistence, testnet actions, brand depth) have been completed.
+
 ## Priority 1
 
-### Build settlement adapters
+### Intel shop effect UI
 
 Goal:
-Introduce a formal settlement abstraction so action steps can run through either simulated logic or Stellar testnet execution.
-
-Deliverables:
-- settlement adapter interface
-- simulated adapter
-- testnet adapter stub or first real implementation
-- engine updated to call adapters instead of embedding settlement logic directly
+When the Market Almanac is active, show counterparty greed/reliability/mood in the morning brief and agent select screens.
 
 Why:
-This is the cleanest bridge from today's prototype to the desired on-chain future.
+The item costs 20¤ and has a duration, but currently provides no visible benefit. Players buy it and see nothing.
 
 ## Priority 2
 
-### Add receipt ledger UI
+### Agent wallet surplus return
 
 Goal:
-Give players and future developers a dedicated place to inspect action receipts.
-
-Deliverables:
-- new ledger or receipts tab
-- list of action steps with settlement mode, cost, success, and tx hash when available
-- explorer links for testnet-backed actions
+After mission resolution, call `/api/agent-wallet/return-surplus` to transfer unused RUBY from agent wallets back to the player.
 
 Why:
-Receipts are central to the product fantasy.
-They also make the game better at teaching how agents and payments interact.
+Agent wallets get funded with the full mission budget before MPP requests, but any unspent RUBY stays in the agent wallet forever. This leaks value.
 
 ## Priority 3
 
-### Split the content registries
+### Panel/helper consolidation
 
 Goal:
-Make the project easier to extend.
+Replace duplicated display logic in PanelLayouts.tsx with calls to uiHelpers.ts.
 
-Deliverables:
-- move agents, missions, counterparties, action metadata, and event text into separate modules
-- keep imports clean and centralized
+What's duplicated:
+- Treasury display (MorningBriefLayout reimplements `treasuryLines()`)
+- Financial summary (ResolutionLayout reimplements `financialSummaryLines()`)
+- Agent stats (AgentSelectLayout reimplements `agentStatLine()`/`agentMetaLine()`)
 
 Why:
-The project is currently easy to understand but gameData is becoming large.
-Future-proofing means modular registries.
+Changes currently need to be made in two places. Single source of truth prevents drift.
 
 ## Priority 4
 
-### Add modular event packs
+### Balance iteration
 
 Goal:
-Make events easy to add without touching core engine logic.
+More playtesting with real players to validate the tuned economy.
 
-Deliverables:
-- event definition schema
-- trigger conditions
-- action hooks
-- district packs
-- counterparty packs
-
-Why:
-The user explicitly asked for future-proof event extensibility.
+Key questions:
+- Is cautious play too reliable? (Currently wins ~100% of the time)
+- Is the late-game rep decay (-3/day at 90+) felt by players or just a background drain?
+- Does the rival feel threatening enough? Should interference have mechanical effects beyond rumors?
+- Are shop items worth buying? Is the budget discount noticeable?
 
 ## Priority 5
 
-### Add persistence
+### Unlockable counterparties
 
 Goal:
-Allow campaigns to continue across reloads and eventually support richer progression.
+Add hidden NPCs that unlock through achievements or quest completion.
 
-Deliverables:
-- backend persistence model
-- save/load endpoints
-- saved daily reports and receipts
-- saved counterparty state
-
-Why:
-The current prototype is playable but not campaign-grade yet.
-
-## Priority 6
-
-### Add first real testnet-backed action
-
-Recommended first candidate:
-`paid_intel`
-
-Why this is the best first on-chain action:
-- small and bounded
-- easy to explain
-- natural fit with MPP/x402
-- clean receipt story
-- low risk to the broader game loop
-
-Potential user story:
-- agent pays a premium intel bureau on Stellar testnet
-- the bureau returns a higher-value rumor or forecast
-- the mission report includes a receipt and transaction hash
-
-## Priority 7
-
-### Add brand and faction depth
-
-Potential features:
-- district factions
-- brand archetypes
-- rivals with recurring behaviors
-- supplier trust
-- blacklisting and soft power
+Ideas:
+- High-trust counterparty reveals a back-channel contact
+- Completing an agent quest unlocks a specialist vendor
+- Reaching 60 rep unlocks the "VIP Traders' Circle"
 
 Why:
-These deepen strategic play after the payment and infrastructure layers are in place.
+Rewards exploration and gives players something to discover in repeat playthroughs.
 
-## Architectural principles for all future work
+## Architectural principles
 
-- keep simulated fallback available
-- add new systems through explicit interfaces
-- keep mission reports understandable
-- make counterparties visible in the UI
-- avoid hiding chain logic behind vague abstractions
-- every on-chain action should improve the player fantasy, not just prove that a transaction happened
+- Keep simulated fallback available for all on-chain actions
+- Every AI-generated output must have a fallback path
+- Use uiHelpers.ts for all shared display logic
+- CSS for borders/panels, braille for art, text for content
+- RUBY for value, XLM for fees only

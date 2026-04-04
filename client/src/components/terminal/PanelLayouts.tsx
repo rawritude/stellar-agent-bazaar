@@ -144,7 +144,7 @@ export function MorningBriefLayout({ term }: { term: TerminalState }) {
                     href={`https://stellar.expert/explorer/testnet/account/${state.campaign.rival.walletAddress}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "#a87cc4", fontSize: "0.8em", textDecoration: "underline" }}
+                    style={{ color: TERMINAL_COLORS.purple, fontSize: "0.85em", textDecoration: "underline" }}
                   >
                     View rival on Stellar
                   </a>
@@ -180,6 +180,8 @@ export function AgentSelectLayout({ term }: { term: TerminalState }) {
   const idle = state.agents.filter(a => a.status === "idle");
   const district = state.districts.find(d => d.id === term.pending.districtId);
   const mission = district?.availableMissions.find(m => m.id === term.pending.missionId);
+
+  if (!district || !mission) return null;
 
   return (
     <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
@@ -280,7 +282,9 @@ export function ResolutionLayout({ term }: { term: TerminalState }) {
 
   if (!result) return null;
 
-  const currentStep = result.actionSteps[result.actionSteps.length - 1];
+  const currentStep = result.actionSteps.length > 0
+    ? result.actionSteps[result.actionSteps.length - 1]
+    : undefined;
 
   return (
     <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "8px", height: "100%" }}>
@@ -431,7 +435,7 @@ export function ResolutionLayout({ term }: { term: TerminalState }) {
                       href={currentStep.receipt?.explorerUrl || `https://stellar.expert/explorer/testnet/tx/${currentStep.stellarTxId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "#5cb8a5", fontSize: "0.85em", textDecoration: "underline" }}
+                      style={{ color: TERMINAL_COLORS.teal, fontSize: "0.85em", textDecoration: "underline" }}
                     >
                       View on Stellar Expert
                     </a>

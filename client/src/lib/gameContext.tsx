@@ -11,6 +11,7 @@ import {
   resolveDay,
   advanceDay,
   startPlanning,
+  generateAgentQuests,
 } from "./gameEngine";
 import type { SettlementAdapter } from "./settlement";
 import type { WalletInfo } from "./wallet/smartAccount";
@@ -42,7 +43,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
     case "ADVANCE_DAY":
       return advanceDay(state);
     case "SET_AGENTS":
-      return { ...state, agents: action.agents };
+      return {
+        ...state,
+        agents: action.agents,
+        campaign: {
+          ...state.campaign,
+          agentQuests: generateAgentQuests(action.agents),
+        },
+      };
     case "LOAD_GAME":
       return action.savedState;
     case "CLEAR_PENDING_EVENT": {
@@ -129,6 +137,14 @@ function gameReducer(state: GameState, action: GameAction): GameState {
           break;
         case "rep_boost":
           newRep = Math.min(100, newRep + item.effect.value);
+          break;
+        case "budget_discount":
+        case "intel":
+        case "protection":
+          // Duration-based effects — no immediate action needed.
+          // Budget discount is checked in dispatchMission().
+          // Protection is checked in advanceDay() rival interference.
+          // Intel reveals counterparty preferences in the UI.
           break;
       }
 

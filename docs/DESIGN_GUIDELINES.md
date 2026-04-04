@@ -268,8 +268,25 @@ All in-game currency is the RUBY token on Stellar testnet:
 ### MPP Integration
 - Counterparty services use `@stellar/mpp` SDK (`server/mpp-services.ts`)
 - Agent MPP client signs payments with derived keypair (`server/mpp-agent.ts`)
+- Agent wallets funded with RUBY before each MPP request
 - Game engine calls `POST /api/resolve-step` for MPP-eligible actions
 - Falls back to local dice rolls if MPP unavailable
+- Falls back to simulated result on network error (never returns 500)
+
+### AI Scene Generation
+- Claude Haiku generates scenes via tool_use structured output
+- Fuzzy enum matching for agent decisions and counterparty reactions
+- Markdown fence stripping and text-block JSON extraction
+- 3 fallback dialogue templates when AI fails or is unavailable
+- 100% scene generation success rate after hardening
+
+### Economy Balance
+- Daily upkeep scales: 6 base + (week-1)*2 + reputation/40
+- Reputation decay scales: -1 below 60 rep, -2 at 60+, -3 at 90+
+- Counterparty trust: +3 per success (diminishing above 50), -5 per failure
+- Rival grows faster in week 3+: +2-3 rep/day instead of +1-2
+- Reward multiplier: 0.6 + 0.4 * stepSuccessRate (normal), 1.1 + 0.5 * rng (wild)
+- Failure consolation: 3-13% of base reward
 
 ### Screen Routing for New Systems
 

@@ -4,12 +4,11 @@ If another coding agent takes over, give them this brief.
 
 ## Project
 
-The Velvet Ledger
+The Velvet Ledger — a terminal roguelite where you run a trading brand in an interplanetary marketplace. Also an x402/MPP protocol playground on Stellar testnet.
 
 ## Current form
 
-A playable browser prototype called The Velvet Ledger.
-It is a funny market-management game where the player funds agents who interact with counterparties and return with reports.
+A fully playable browser game with real blockchain transactions, AI-generated agents and scenes, and a tuned 30-day campaign arc.
 
 ## Core rule
 
@@ -19,29 +18,27 @@ Extend the current implementation.
 ## First files to inspect
 
 - `README.md`
-- `docs/HANDOFF.md`
-- `docs/NEXT_STEPS.md`
-- `client/src/lib/gameData.ts`
-- `client/src/lib/gameEngine.ts`
-- `client/src/components/MarketNetwork.tsx`
-- `client/src/components/MissionComposer.tsx`
-- `client/src/components/DailyReport.tsx`
+- `docs/HANDOFF.md` — full architecture, known issues, next priorities
+- `docs/DESIGN_GUIDELINES.md` — visual design system (CSS panels, braille art, color palette)
+- `docs/PLAYTEST_NOTES.md` — latest audit results and balance data
+- `client/src/lib/gameData.ts` — types, agents, counterparties, districts
+- `client/src/lib/gameEngine.ts` — core game logic
+- `client/src/lib/terminal/terminalMachine.ts` — screen state machine
+- `server/game-master.ts` — RUBY token economy
+- `server/mpp-services.ts` — real MPP counterparty endpoints
 
 ## What matters most
 
-- keep it funny and readable
-- keep counterparties visible
-- keep simulated mode working
-- build toward Stellar testnet, not away from it
-- make new events and systems easy to add
+1. The game must be fun to play in a terminal
+2. On-chain transactions must be real and verifiable
+3. AI content must always have a fallback path
+4. CSS for borders, braille for art, text for content — never box-drawing characters
+5. Every change should be playtested (`npx tsx playtest.ts`)
 
-## Best next milestone
+## What NOT to do
 
-Implement a formal settlement adapter layer and a receipt ledger UI.
-
-## Avoid
-
-- turning the game into a pure crypto demo
-- hiding the agent interaction chain
-- coupling every gameplay system directly to live testnet calls
-- rewriting the entire architecture without need
+- Don't use Unicode box-drawing characters for borders
+- Don't add features without reading `DESIGN_GUIDELINES.md`
+- Don't mock the blockchain — use real testnet transactions with simulated fallback
+- Don't break the typewriter animation flow (check `TerminalShell.tsx`)
+- Don't duplicate helpers — check `uiHelpers.ts` first

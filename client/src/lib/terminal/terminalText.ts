@@ -374,6 +374,11 @@ export function hakimMorningBrief(state: GameState): TerminalLine[] {
     lines.push(blank());
   }
 
+  // Rival brand (appears week 2+)
+  if (state.campaign?.rivalBrand) {
+    lines.push(...buildRivalLines(state));
+  }
+
   return lines;
 }
 
@@ -743,8 +748,8 @@ export function buildDailyReport(state: GameState): TerminalLine[] {
     blank(),
     indented(4,
       span("Missions: ", "dim"), span(`${report.missionsRun}`, "white"),
-      span("  Earned: ", "dim"), span(`${report.totalEarned}`, "green"),
-      span("  Spent: ", "dim"), span(`${report.totalSpent}`, "red"),
+      span("  Earned: ", "dim"), span(cash(report.totalEarned), "green"),
+      span("  Spent: ", "dim"), span(cash(report.totalSpent), "red"),
     ),
     indented(4,
       span("Net P&L: ", "dim"),
@@ -1129,7 +1134,7 @@ export function buildNFTMintedLines(agentName: string, tokenId: string, txHash?:
     blank(),
     indented(4, span("Agent: ", "dim"), span(agentName, "cyan", true)),
     indented(4, span("Token: ", "dim"), span(tokenId, "teal")),
-    txHash ? indented(4, span("TX:    ", "dim"), span(txHash.slice(0, 32) + "...", "teal")) : line(span("")),
+    txHash ? indented(4, span("TX:    ", "dim"), span(txHash.slice(0, 32) + "...", "teal")) : blank(),
     blank(),
     line(span("  \"This agent is now eternally yours. Bring them", "gold")),
     line(span("   to any future game. The stars remember.\"", "gold")),

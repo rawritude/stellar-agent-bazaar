@@ -293,6 +293,17 @@ export async function registerRoutes(
     }
   });
 
+  // Initialize GM on first request (lazy)
+  let gmInitialized = false;
+
+  async function ensureGmInitialized() {
+    if (!gmInitialized) {
+      const gm = getGameMaster();
+      await gm.initialize();
+      gmInitialized = true;
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════
   // RIVAL WALLET — On-chain rival brand
   // ═══════════════════════════════════════════════════════════════
@@ -309,8 +320,8 @@ export async function registerRoutes(
     } catch {}
 
     // Add RUBY trustline + fund
+    await ensureGmInitialized();
     const gm = getGameMaster();
-    if (!gmInitialized) { await gm.initialize(); gmInitialized = true; }
     await gm.addTrustline(kp);
     if (fundAmount) {
       await gm.mintRuby(kp.publicKey(), Number(fundAmount));
@@ -328,34 +339,22 @@ export async function registerRoutes(
   // GAME MASTER — RUBY token economy
   // ═══════════════════════════════════════════════════════════════
 
-  // Initialize GM on first request (lazy)
-  let gmInitialized = false;
-
   app.get("/api/gm/info", async (_req, res) => {
+    await ensureGmInitialized();
     const gm = getGameMaster();
-    if (!gmInitialized) {
-      await gm.initialize();
-      gmInitialized = true;
-    }
     res.json(gm.getInfo());
   });
 
   app.get("/api/gm/balance/:address", async (req, res) => {
+    await ensureGmInitialized();
     const gm = getGameMaster();
-    if (!gmInitialized) {
-      await gm.initialize();
-      gmInitialized = true;
-    }
     const balance = await gm.getBalance(req.params.address);
     res.json({ address: req.params.address, balance, asset: "RUBY" });
   });
 
   app.post("/api/gm/mint", async (req, res) => {
+    await ensureGmInitialized();
     const gm = getGameMaster();
-    if (!gmInitialized) {
-      await gm.initialize();
-      gmInitialized = true;
-    }
     const { destination, amount } = req.body;
     if (!destination || !amount) {
       return res.status(400).json({ error: "Missing destination or amount" });
@@ -367,6 +366,24 @@ export async function registerRoutes(
     const result = await gm.mintRuby(destination, Number(amount));
     log(`GM mint: ${amount} RUBY → ${destination.slice(0, 12)}... (${result.success ? "OK" : "FAIL"})`, "stellar");
     res.json(result);
+  });
+
+  // ── Player economy initialization ──────────────────────────────
+  // Called once when a player starts a new game with a connected wallet.
+  // Mints initial RUBY to the player's wallet for in-game spending.
+  app.post("/api/player/init-economy", async (req, res) => {
+    const { playerPubkey, startingRuby } = req.body;
+    if (!playerPubkey) return res.status(400).json({ error: "Missing playerPubkey" });
+
+    await ensureGmInitialized();
+    const gm = getGameMaster();
+    const amount = startingRuby || 120; // Default starting cash matches game's initial 120¤
+
+    // Setup trustline + mint RUBY
+    await gm.setupTrustline(playerPubkey);
+    const result = await gm.mintRuby(playerPubkey, amount);
+    log(`Player economy init: ${amount} RUBY → ${playerPubkey.slice(0, 12)}... (${result.success ? "OK" : "FAIL"})`, "stellar");
+    res.json({ ...result, amount, asset: "RUBY" });
   });
 
   // ═══════════════════════════════════════════════════════════════
@@ -456,11 +473,8 @@ export async function registerRoutes(
   });
 
   app.post("/api/gm/add-trustline", async (req, res) => {
+    await ensureGmInitialized();
     const gm = getGameMaster();
-    if (!gmInitialized) {
-      await gm.initialize();
-      gmInitialized = true;
-    }
     const { secretKey } = req.body;
     if (!secretKey) {
       return res.status(400).json({ error: "Missing secretKey" });

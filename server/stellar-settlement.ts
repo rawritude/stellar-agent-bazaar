@@ -161,7 +161,7 @@ export class StellarSettlementService {
 
       const body = await response.text();
       // Friendbot returns 400 if already funded — that's fine
-      if (body.includes("createAccountAlreadyExist")) {
+      if (body.includes("createAccountAlreadyExist") || body.includes("already funded")) {
         this.funded = true;
         return {
           success: true,
@@ -189,7 +189,12 @@ export class StellarSettlementService {
   async settle(request: StellarSettleRequest): Promise<StellarSettleResult> {
     const isTestnetReady = TESTNET_READY_ACTIONS.has(request.actionType);
 
-    // If not funded or not a testnet-ready action, return simulated
+    // Auto-fund on first testnet-ready action
+    if (!this.funded && isTestnetReady) {
+      await this.fundWallet();
+    }
+
+    // If still not funded or not a testnet-ready action, return simulated
     if (!this.funded || !isTestnetReady) {
       return this.simulatedReceipt(request);
     }

@@ -94,7 +94,8 @@ export class AgentWalletService {
           wallet.funded = true;
         } else {
           const body = await res.json().catch(() => null);
-          if (body?.detail?.includes("createAccountAlreadyExist")) {
+          const detail = body?.detail || "";
+          if (detail.includes("createAccountAlreadyExist") || detail.includes("already funded")) {
             wallet.funded = true;
           }
         }

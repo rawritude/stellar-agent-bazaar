@@ -233,6 +233,21 @@ export function useTerminal() {
     // Always initialize the game first
     dispatch({ type: "START_GAME", brandName });
 
+    // Initialize player's on-chain economy (non-blocking)
+    if (wallet?.address) {
+      fetch("/api/player/init-economy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerPubkey: wallet.address }),
+      }).then(r => r.json()).then(result => {
+        if (result.success) {
+          console.log(`[economy] Player funded with ${result.amount} RUBY`);
+        }
+      }).catch(err => {
+        console.warn("[economy] Player init failed (non-blocking):", err.message);
+      });
+    }
+
     try {
       const res = await fetch("/api/generate-agents", {
         method: "POST",

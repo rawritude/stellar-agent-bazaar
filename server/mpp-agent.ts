@@ -53,7 +53,7 @@ export interface StepResult {
 }
 
 export interface MppExchangeStep {
-  type: "request" | "challenge_402" | "agent_decision" | "payment" | "proof" | "service_delivered" | "walk_away";
+  type: "request" | "challenge_402" | "agent_decision" | "payment" | "proof" | "service_delivered" | "walk_away" | "fund";
   label: string;
   detail?: string;
   txHash?: string;
@@ -141,6 +141,16 @@ export async function resolveStepViaMpp(
       agentReasoning: "Agent wallet not ready.",
       mppExchange: exchange,
     };
+  }
+
+  // Fund agent wallet with RUBY for this mission's budget
+  const fundResult = await walletService.fundAgent(agentWallet, ctx.agentBudget);
+  if (fundResult.success) {
+    exchange.push({
+      type: "fund",
+      label: `GM funded ${ctx.agentName}'s wallet with ${ctx.agentBudget} RUBY`,
+      detail: fundResult.txHash ? `TX: ${fundResult.txHash}` : undefined,
+    });
   }
 
   // 5. Make the MPP request
