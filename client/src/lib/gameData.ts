@@ -213,6 +213,7 @@ export interface RivalPersonality {
   catchphrase: string;            // Rival's signature taunt
   preferredDistrict?: string;     // District they dominate
   interferenceChance: number;     // 0-1 chance of messing with player per day
+  walletAddress?: string;         // Stellar testnet address (funded with RUBY)
 }
 
 export interface ShopItem {

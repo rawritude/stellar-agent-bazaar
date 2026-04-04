@@ -9,7 +9,7 @@ import { generateAgents } from "./agent-generator";
 import { canSpend, recordSpend, getBudgetStatus } from "./budget";
 import { saveGame, loadGame, getSaveSummary, deleteSave } from "./save-service";
 import { initializeGameMaster, getGameMaster } from "./game-master";
-import { getAgentWalletService } from "./agent-wallets";
+import { getAgentWalletService, deriveRivalKeypair } from "./agent-wallets";
 import { handleMppService, getServicePrice } from "./mpp-services";
 import { resolveStepViaMpp } from "./mpp-agent";
 import { log } from "./index";
@@ -291,6 +291,37 @@ export async function registerRoutes(
     } catch (err: any) {
       res.json({ agent: null, error: err.message });
     }
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // RIVAL WALLET — On-chain rival brand
+  // ═══════════════════════════════════════════════════════════════
+
+  app.post("/api/rival/create", async (req, res) => {
+    const { rivalName, fundAmount } = req.body;
+    if (!rivalName) return res.status(400).json({ error: "Missing rivalName" });
+
+    const kp = deriveRivalKeypair(rivalName);
+
+    // Fund via friendbot
+    try {
+      await fetch(`https://friendbot.stellar.org?addr=${kp.publicKey()}`);
+    } catch {}
+
+    // Add RUBY trustline + fund
+    const gm = getGameMaster();
+    if (!gmInitialized) { await gm.initialize(); gmInitialized = true; }
+    await gm.addTrustline(kp);
+    if (fundAmount) {
+      await gm.mintRuby(kp.publicKey(), Number(fundAmount));
+    }
+
+    log(`Rival wallet created: ${rivalName} → ${kp.publicKey().slice(0, 12)}...`, "stellar");
+    res.json({
+      rivalName,
+      publicKey: kp.publicKey(),
+      explorerUrl: `https://stellar.expert/explorer/testnet/account/${kp.publicKey()}`,
+    });
   });
 
   // ═══════════════════════════════════════════════════════════════

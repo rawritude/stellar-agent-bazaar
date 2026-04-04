@@ -138,6 +138,18 @@ export function MorningBriefLayout({ term }: { term: TerminalState }) {
                     : "They're ahead..."}
                 </PanelText>
               </PanelLine>
+              {state.campaign.rival?.walletAddress && (
+                <PanelLine>
+                  <a
+                    href={`https://stellar.expert/explorer/testnet/account/${state.campaign.rival.walletAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "#a87cc4", fontSize: "0.8em", textDecoration: "underline" }}
+                  >
+                    View rival on Stellar
+                  </a>
+                </PanelLine>
+              )}
             </TerminalPanel>
           )}
 

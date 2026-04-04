@@ -12,6 +12,7 @@
 import { Mppx, stellar, Store } from "@stellar/mpp/charge/server";
 import { XLM_SAC_TESTNET } from "@stellar/mpp";
 import { deriveCounterpartyKeypair } from "./agent-wallets";
+import { getGameMaster } from "./game-master";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 // ── Service result types ──────────────────────────────────────
@@ -116,11 +117,15 @@ function getMppHandler(counterpartyId: string): any {
 
   const kp = deriveCounterpartyKeypair(counterpartyId);
 
+  // Use RUBY SAC if available, fall back to XLM
+  const gm = getGameMaster();
+  const currency = gm.getSACAddress() || XLM_SAC_TESTNET;
+
   handler = Mppx.create({
     methods: [
       stellar.charge({
         recipient: kp.publicKey(),
-        currency: XLM_SAC_TESTNET,
+        currency,
         network: "stellar:testnet",
         store: Store.memory(),
       }),

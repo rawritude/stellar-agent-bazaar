@@ -46,6 +46,16 @@ export function deriveCounterpartyKeypair(counterpartyId: string): StellarSdk.Ke
   return StellarSdk.Keypair.fromRawEd25519Seed(seed);
 }
 
+/**
+ * Derive a deterministic keypair for a rival brand.
+ */
+export function deriveRivalKeypair(rivalName: string): StellarSdk.Keypair {
+  const seed = createHash("sha256")
+    .update(`rival:${rivalName}:velvet-ledger`)
+    .digest();
+  return StellarSdk.Keypair.fromRawEd25519Seed(seed);
+}
+
 export class AgentWalletService {
   private server: StellarSdk.Horizon.Server;
   private wallets: Map<string, AgentWallet> = new Map();

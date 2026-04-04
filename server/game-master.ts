@@ -8,6 +8,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import * as StellarSdk from "@stellar/stellar-sdk";
+import { execSync } from "child_process";
 
 const HORIZON_TESTNET = "https://horizon-testnet.stellar.org";
 const FRIENDBOT_URL = "https://friendbot.stellar.org";
@@ -26,6 +27,7 @@ export class GameMaster {
   private server: StellarSdk.Horizon.Server;
   private funded: boolean = false;
   private rubyAsset: StellarSdk.Asset;
+  private rubySACAddress: string | null = null;
 
   constructor(config?: GameMasterConfig) {
     if (config?.secretKey) {
@@ -46,9 +48,16 @@ export class GameMaster {
       publicKey: this.keypair.publicKey(),
       assetCode: RUBY_CODE,
       assetIssuer: this.keypair.publicKey(),
+      sacAddress: this.rubySACAddress,
       funded: this.funded,
       explorerUrl: `${EXPLORER_BASE}/account/${this.keypair.publicKey()}`,
+      assetExplorerUrl: `${EXPLORER_BASE}/asset/${RUBY_CODE}-${this.keypair.publicKey()}`,
     };
+  }
+
+  /** Get the RUBY SAC contract address (for MPP payments). Null if not deployed. */
+  getSACAddress(): string | null {
+    return this.rubySACAddress;
   }
 
   /** Get the RUBY asset object */
@@ -235,13 +244,96 @@ export class GameMaster {
     }
   }
 
-  /** Initialize the GM — fund self and prepare the economy */
+  /**
+   * Deploy RUBY as a Soroban SAC (Stellar Asset Contract).
+   * This wraps the classic RUBY asset so it can be used with the MPP SDK.
+   * Requires `stellar` CLI to be installed.
+   */
+  async deploySAC(): Promise<string | null> {
+    if (this.rubySACAddress) return this.rubySACAddress;
+
+    // Check if cached in env
+    if (process.env.RUBY_SAC_ADDRESS) {
+      this.rubySACAddress = process.env.RUBY_SAC_ADDRESS;
+      console.log(`[GM] RUBY SAC loaded from env: ${this.rubySACAddress}`);
+      return this.rubySACAddress;
+    }
+
+    try {
+      // Check if stellar CLI is available
+      execSync("stellar --version", { stdio: "pipe" });
+    } catch {
+      console.warn(`[GM] stellar CLI not available — cannot deploy SAC. MPP will use XLM.`);
+      return null;
+    }
+
+    try {
+      // First, ensure the GM identity exists in stellar CLI
+      try {
+        execSync(`stellar keys address velvet-ledger-gm`, { stdio: "pipe" });
+      } catch {
+        // Add the GM key to stellar CLI
+        execSync(`stellar keys add velvet-ledger-gm --secret-key ${this.keypair.secret()}`, { stdio: "pipe" });
+        console.log(`[GM] Added GM identity to stellar CLI`);
+      }
+
+      // Deploy the SAC
+      const assetStr = `${RUBY_CODE}:${this.keypair.publicKey()}`;
+      const output = execSync(
+        `stellar contract asset deploy --asset "${assetStr}" --source-account velvet-ledger-gm --network testnet 2>&1`,
+        { encoding: "utf-8", timeout: 60000 }
+      ).trim();
+
+      // The output should be the contract address (C...)
+      if (output.startsWith("C") && output.length === 56) {
+        this.rubySACAddress = output;
+        console.log(`[GM] RUBY SAC deployed: ${this.rubySACAddress}`);
+        console.log(`[GM] Save to .env as RUBY_SAC_ADDRESS=${this.rubySACAddress}`);
+        return this.rubySACAddress;
+      }
+
+      // Some versions output more — try to extract the C... address
+      const match = output.match(/(C[A-Z0-9]{55})/);
+      if (match) {
+        this.rubySACAddress = match[1];
+        console.log(`[GM] RUBY SAC deployed: ${this.rubySACAddress}`);
+        return this.rubySACAddress;
+      }
+
+      console.warn(`[GM] SAC deploy output unexpected: ${output.slice(0, 100)}`);
+      return null;
+    } catch (err: any) {
+      // If already deployed, the error message may contain the address
+      const errStr = err.message || err.stderr || "";
+      if (errStr.includes("already been deployed")) {
+        const match = errStr.match(/(C[A-Z0-9]{55})/);
+        if (match) {
+          this.rubySACAddress = match[1];
+          console.log(`[GM] RUBY SAC already deployed: ${this.rubySACAddress}`);
+          return this.rubySACAddress;
+        }
+      }
+      console.warn(`[GM] SAC deployment failed: ${errStr.slice(0, 200)}`);
+      return null;
+    }
+  }
+
+  /** Initialize the GM — fund self, deploy SAC, prepare the economy */
   async initialize(): Promise<boolean> {
     const funded = await this.fundSelf();
     if (!funded) {
       console.error(`[GM] Failed to initialize — cannot fund GM account`);
       return false;
     }
+
+    // Try to deploy RUBY SAC (non-blocking — falls back to XLM if it fails)
+    const sacAddress = await this.deploySAC();
+    if (sacAddress) {
+      console.log(`[GM] RUBY SAC ready for MPP payments: ${sacAddress}`);
+    } else {
+      console.warn(`[GM] RUBY SAC not available — MPP will fall back to XLM`);
+    }
+
     console.log(`[GM] Game Master ready. RUBY issuer: ${this.keypair.publicKey()}`);
     console.log(`[GM] Explorer: ${EXPLORER_BASE}/account/${this.keypair.publicKey()}`);
     return true;
