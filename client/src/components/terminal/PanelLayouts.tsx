@@ -409,10 +409,22 @@ export function ResolutionLayout({ term }: { term: TerminalState }) {
                 </PanelText>
               </PanelLine>
               {currentStep.stellarTxId && (
-                <PanelLine>
-                  <PanelText dim>TX: </PanelText>
-                  <PanelText color="teal">{currentStep.stellarTxId.slice(0, 16)}...</PanelText>
-                </PanelLine>
+                <>
+                  <PanelLine>
+                    <PanelText dim>TX: </PanelText>
+                    <PanelText color="teal">{currentStep.stellarTxId.slice(0, 16)}...</PanelText>
+                  </PanelLine>
+                  <PanelLine>
+                    <a
+                      href={currentStep.receipt?.explorerUrl || `https://stellar.expert/explorer/testnet/tx/${currentStep.stellarTxId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: "#5cb8a5", fontSize: "0.85em", textDecoration: "underline" }}
+                    >
+                      View on Stellar Expert
+                    </a>
+                  </PanelLine>
+                </>
               )}
             </TerminalPanel>
           )}

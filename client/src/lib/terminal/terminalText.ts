@@ -703,7 +703,9 @@ export function buildMissionNarrative(mission: ActiveMission): TerminalLine[] {
         step.receipt?.receiptId ? span(` | Receipt: ${step.receipt.receiptId}`, "dim") : span("", "dim"),
       ));
       if (step.stellarTxId) {
+        const explorerLink = step.receipt?.explorerUrl || `https://stellar.expert/explorer/testnet/tx/${step.stellarTxId}`;
         lines.push(indented(6, span(`Stellar TX: ${step.stellarTxId.slice(0, 24)}...`, "teal")));
+        lines.push(indented(6, span(`Explorer:   ${explorerLink}`, "teal")));
       }
       lines.push(blank());
     });
@@ -852,7 +854,9 @@ export function buildLedgerView(state: GameState): TerminalLine[] {
       if (r) {
         lines.push(indented(6, span(r.receiptId, "dim")));
         if (r.stellarTxId) {
+          const explorerLink = r.explorerUrl || `https://stellar.expert/explorer/testnet/tx/${r.stellarTxId}`;
           lines.push(indented(6, span(`TX: ${r.stellarTxId.slice(0, 32)}...`, "teal")));
+          lines.push(indented(6, span(explorerLink, "teal")));
         }
       }
     });

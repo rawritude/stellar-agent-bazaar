@@ -134,11 +134,33 @@ function TerminalLineView({
         }
 
         charOffset += s.text.length;
+        const spanColor = s.color ? TERMINAL_COLORS[s.color] : TERMINAL_COLORS.white;
+
+        // Auto-link URLs (e.g. Stellar explorer links)
+        if (s.text.includes("https://")) {
+          const urlMatch = s.text.match(/(https:\/\/\S+)/);
+          if (urlMatch) {
+            const before = s.text.slice(0, urlMatch.index);
+            const url = urlMatch[1];
+            const after = s.text.slice((urlMatch.index ?? 0) + url.length);
+            return (
+              <span key={spanIdx} style={{ color: spanColor, fontWeight: s.bold ? "bold" : undefined }}>
+                {before}
+                <a href={url} target="_blank" rel="noopener noreferrer"
+                   style={{ color: spanColor, textDecoration: "underline" }}>
+                  {url}
+                </a>
+                {after}
+              </span>
+            );
+          }
+        }
+
         return (
           <span
             key={spanIdx}
             style={{
-              color: s.color ? TERMINAL_COLORS[s.color] : TERMINAL_COLORS.white,
+              color: spanColor,
               fontWeight: s.bold ? "bold" : undefined,
               fontStyle: s.italic ? "italic" : undefined,
             }}
