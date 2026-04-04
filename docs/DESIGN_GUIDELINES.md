@@ -250,10 +250,26 @@ All animations clear on screen change (`animManager.clear()`).
 
 ### Rival Personality
 - 4 rival types: aggressive, cunning, charismatic, ruthless
-- Spawns in week 2 with `pickRival()`
+- Spawns in week 2 with `pickRival()`, gets real Stellar wallet + RUBY
 - Daily interference via `resolveRivalInterference()` — generates style-specific rumors
 - Blocked by Ward Charm shop item
-- Displayed in morning brief panel with catchphrase and reputation comparison
+- Displayed in morning brief panel with catchphrase, reputation comparison, and explorer link
+
+### On-Chain Economy (RUBY Token)
+
+All in-game currency is the RUBY token on Stellar testnet:
+- **Game Master** (`server/game-master.ts`) issues RUBY as a classic Stellar asset
+- RUBY is wrapped as a Soroban SAC for MPP payments (`deploySAC()`)
+- Every wallet (player, agents, counterparties, rival) has a RUBY trustline
+- Transactions flow: GM → Player → Agent → Counterparty (via MPP)
+- All balances and transactions viewable on stellar.expert
+- XLM is used only for network fees
+
+### MPP Integration
+- Counterparty services use `@stellar/mpp` SDK (`server/mpp-services.ts`)
+- Agent MPP client signs payments with derived keypair (`server/mpp-agent.ts`)
+- Game engine calls `POST /api/resolve-step` for MPP-eligible actions
+- Falls back to local dice rolls if MPP unavailable
 
 ### Screen Routing for New Systems
 

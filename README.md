@@ -59,9 +59,11 @@ npm run dev
 
 Open [http://localhost:5000](http://localhost:5000). Connect your passkey. Meet your agents. Try not to go bankrupt.
 
-**Optional:** Add your Anthropic API key to `.env` for AI-generated agents and dialogue:
+**Optional `.env` configuration:**
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=sk-ant-...   # AI-generated agents and dialogue (Claude Haiku)
+GM_SECRET_KEY=S...              # Persistent Game Master keypair (auto-generated if missing)
+RUBY_SAC_ADDRESS=C...           # RUBY token SAC address (auto-deployed if stellar CLI available)
 ```
 
 ---
@@ -169,9 +171,9 @@ Nine colorful NPCs with personality, reliability, greed, and mood swings:
 | :dark_sunglasses: | The Shadow Desk | Rival Handler | Notes under doors only |
 | :mega: | Festival Criers Guild | Promoter | "Subtle" means 60% volume |
 
-### The Rival
+### The Rival (On-Chain Competitor)
 
-A competing brand appears in Week 2, randomly selected from four personality types:
+A competing brand appears in Week 2 with its own **real Stellar wallet** and RUBY balance. Randomly selected from four personality types:
 
 | Style | Name | Catchphrase |
 |-------|------|-------------|
@@ -179,6 +181,8 @@ A competing brand appears in Week 2, randomly selected from four personality typ
 | Cunning | Silk & Shadow Co. | *"I don't compete. I make you irrelevant."* |
 | Charismatic | The Golden Mule Cartel | *"The merchants love me. Can they spell your name?"* |
 | Ruthless | Obsidian & Ash Trading | *"Sentiment is for poets. This is business."* |
+
+The rival's wallet is viewable on stellar.expert. Their RUBY holdings, their transactions — all on-chain and verifiable.
 
 ---
 
@@ -192,53 +196,79 @@ Uses [Smart Account Kit](https://github.com/nicholasgasior/smart-account-kit) to
 
 ## The x402 / MPP Protocol Playground
 
-This game is a **live demonstration** of the x402 (HTTP 402 Payment Required) and MPP (Micro Payment Proofs) protocols on the Stellar network.
+This game is a **live implementation** of the [MPP (Machine Payments Protocol)](https://mpp.dev) on the Stellar network, using the [`@stellar/mpp`](https://github.com/stellar/stellar-mpp-sdk) SDK.
 
-### What Gets Demonstrated
+Every agent-to-counterparty interaction is a real MPP exchange with real Stellar testnet transactions, paid in **RUBY** tokens.
 
-Every mission resolution simulates the full x402 flow:
+### How It Works
 
 ```
-  AGENT                          COUNTERPARTY SERVICE
-    |                                    |
-    |  1. GET /intel/premium             |
-    |  --------------------------------> |
-    |                                    |
-    |  2. 402 Payment Required           |
-    |     PaymentRequirements:           |
-    |       asset: XLM                   |
-    |       amount: 0.5                  |
-    |       destination: GCOUNTERPARTY   |
-    |  <-------------------------------- |
-    |                                    |
-    |  3. Stellar Payment                |
-    |     (testnet transaction)          |
-    |  ===============================>  |
-    |                                    |
-    |  4. GET /intel/premium             |
-    |     X-Payment-Proof: <tx_hash>     |
-    |  --------------------------------> |
-    |                                    |
-    |  5. 200 OK                         |
-    |     { intel: "The spice is..." }   |
-    |  <-------------------------------- |
+  AGENT (has wallet + RUBY budget)       COUNTERPARTY SERVICE (MPP server)
+    |                                              |
+    |  1. POST /api/service/paid_intel             |
+    |  ------------------------------------------> |
+    |                                              |
+    |  2. 402 Payment Required                     |
+    |     WWW-Authenticate: stellar-payment        |
+    |     { amount: "5", asset: RUBY,              |
+    |       destination: GCOUNTERPARTY... }         |
+    |  <------------------------------------------ |
+    |                                              |
+    |  3. Agent AI decides: "Price is fair. Pay."  |
+    |                                              |
+    |  4. RUBY Payment (real Stellar testnet tx)   |
+    |     Agent Wallet → Counterparty Wallet       |
+    |  ==========================================> |
+    |                                              |
+    |  5. POST /api/service/paid_intel             |
+    |     Authorization: stellar-payment <proof>   |
+    |  ------------------------------------------> |
+    |                                              |
+    |  6. MPP SDK verifies payment on-chain        |
+    |                                              |
+    |  7. 200 OK + Payment-Receipt header          |
+    |     { intel: "Spice prices are rising..." }  |
+    |  <------------------------------------------ |
 ```
 
-### Which Actions Use x402
+### Which Actions Use MPP
 
-| Action Type | Stellar Operation | x402 Flow |
-|-------------|-------------------|-----------|
-| Trade Execution | `manageSellOffer` (DEX order) | Full |
-| Paid Intel | `payment` (micropayment) | Full |
-| Permit Filing | `manageData` (credential) | Full |
-| Logistics | `createClaimableBalance` (escrow) | Full |
+| Action Type | MPP Endpoint | Payment |
+|-------------|-------------|---------|
+| Paid Intel | `POST /api/service/paid_intel` | RUBY via SAC |
+| Trade Execution | `POST /api/service/trade_execution` | RUBY via SAC |
+| Permit Filing | `POST /api/service/permit_filing` | RUBY via SAC |
+| Logistics | `POST /api/service/logistics` | RUBY via SAC |
 
-### Real Blockchain Integration
+### The On-Chain Economy
 
-- **Passkey wallets** via Smart Account Kit (WebAuthn -- no seed phrases)
-- **Stellar testnet** transactions with real tx hashes
-- **SEP-50 NFTs** -- mint your agents as Soroban smart contract tokens
-- **Receipt ledger** -- every transaction produces a verifiable receipt
+Every actor in the game has a real Stellar testnet wallet. Every transaction is verifiable on [stellar.expert](https://stellar.expert/explorer/testnet).
+
+```
+  GAME MASTER (server wallet)
+    |  Issues RUBY token (Stellar classic asset, wrapped as Soroban SAC)
+    |  Controls supply. Mints rewards. Funds all participants.
+    |
+    ├── PLAYER (passkey smart account)
+    |     Holds RUBY balance = in-game cash
+    |     XLM for network fees only
+    |
+    ├── AGENT 1-3 (derived keypairs)
+    |     Funded with RUBY at mission dispatch
+    |     Pay counterparties via MPP
+    |     Return surplus to player
+    |
+    ├── 9 COUNTERPARTIES (deterministic keypairs)
+    |     Hold RUBY reserves
+    |     Receive MPP payments from agents
+    |     Madame Lentil, Permit Goblins, etc.
+    |
+    └── RIVAL BRAND (deterministic keypair)
+          Holds RUBY, competes on-chain
+          Viewable on stellar.expert
+```
+
+All wallets, all transactions, all RUBY balances — real and verifiable.
 
 ---
 
@@ -308,9 +338,9 @@ client/
   src/
     lib/
       gameData.ts         -- Types, agents, districts, counterparties
-      gameEngine.ts       -- Pure async game logic (resolve, advance, shop, quests)
+      gameEngine.ts       -- Async game logic (MPP resolution, shop, quests)
       gameContext.tsx      -- React state management (useReducer)
-      settlement/         -- Settlement adapter layer (simulated + Stellar testnet)
+      settlement/         -- Settlement adapter layer
       terminal/
         terminalTypes.ts  -- Screen types, line/span/choice types
         terminalMachine.ts-- Screen-based state machine (pure function)
@@ -330,10 +360,14 @@ client/
         PanelLayouts.tsx  -- CSS panel layouts for data screens
         TerminalPanel.tsx -- Reusable panel component
 server/
+  game-master.ts          -- RUBY token issuer, SAC deployment, economy control
+  agent-wallets.ts        -- Agent/counterparty/rival wallet derivation + funding
+  mpp-services.ts         -- Real MPP-protected counterparty service endpoints
+  mpp-agent.ts            -- Agent-side MPP client (negotiation + payment)
   ai-engine.ts            -- Claude Haiku scene generation with guardrails
   agent-generator.ts      -- AI agent creation with server-side rarity
-  stellar-settlement.ts   -- Real Stellar testnet payments
-  x402.ts                 -- x402/MPP protocol simulation
+  stellar-settlement.ts   -- Direct Stellar testnet payments (fallback)
+  x402.ts                 -- x402/MPP display flow generator
   save-service.ts         -- SQLite save/load by wallet address
   nft-service.ts          -- Soroban NFT contract interaction
 contracts/
