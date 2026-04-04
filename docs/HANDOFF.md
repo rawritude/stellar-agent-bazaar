@@ -1,6 +1,6 @@
 # HANDOFF
 
-This document is for any future coding agent or developer taking over work on Stellar Agent Bazaar.
+This document is for any future coding agent or developer taking over work on The Velvet Ledger.
 
 ## Project status
 

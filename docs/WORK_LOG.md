@@ -8,7 +8,7 @@
 - Established the market-management game direction
 
 ### First playable prototype
-- Built a playable browser game called The Velvet Ledger Bazaar
+- Built a playable browser game called The Velvet Ledger
 - Added day-based progression
 - Added 3 districts, 5 agents, 9 mission templates
 - Added mission dispatch, resolution, and report flow

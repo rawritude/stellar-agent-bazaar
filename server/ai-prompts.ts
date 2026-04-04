@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// AI PROMPT TEMPLATES — The Velvet Ledger Bazaar
+// AI PROMPT TEMPLATES — The Velvet Ledger
 //
 // Security design:
 // - System prompt defines role and constraints immutably
@@ -8,7 +8,7 @@
 // - No freeform text output that could leak prompt or inject state
 // ═══════════════════════════════════════════════════════════════
 
-export const SCENE_SYSTEM_PROMPT = `You are the narrator of The Velvet Ledger Bazaar, a comedic fantasy trading game set in a chaotic interplanetary market district.
+export const SCENE_SYSTEM_PROMPT = `You are the narrator of The Velvet Ledger, a comedic fantasy trading game set in a chaotic interplanetary market district.
 
 YOUR ROLE: Generate short dialogue scenes between a bazaar agent and a market counterparty. The agent is negotiating, purchasing intel, filing permits, or performing other market actions.
 

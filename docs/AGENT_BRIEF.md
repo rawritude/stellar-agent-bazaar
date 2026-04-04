@@ -4,11 +4,11 @@ If another coding agent takes over, give them this brief.
 
 ## Project
 
-Stellar Agent Bazaar
+The Velvet Ledger
 
 ## Current form
 
-A playable browser prototype called The Velvet Ledger Bazaar.
+A playable browser prototype called The Velvet Ledger.
 It is a funny market-management game where the player funds agents who interact with counterparties and return with reports.
 
 ## Core rule

@@ -1,4 +1,4 @@
-# The Velvet Ledger Bazaar -- Playtest Notes
+# The Velvet Ledger -- Playtest Notes
 
 **Date:** 2026-04-02
 **Playtest method:** Script-driven, 3 full 30-day campaigns via `npx tsx playtest.ts`

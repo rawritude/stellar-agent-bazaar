@@ -1,4 +1,4 @@
-# Design Guidelines — The Velvet Ledger Bazaar
+# Design Guidelines — The Velvet Ledger
 
 ## Core Principle
 
@@ -101,7 +101,7 @@ box-shadow: inset 0 0 100px rgba(0,0,0,0.3);
 - Use CSS font-size, not spaced-out letters
 - Glow effect via text-shadow
 - Color: gold
-- Example: `<span style="fontSize: '1.4em', textShadow: '0 0 10px #d4a843'">The Velvet Ledger Bazaar</span>`
+- Example: `<span style="fontSize: '1.4em', textShadow: '0 0 10px #d4a843'">The Velvet Ledger</span>`
 
 ### Dividers
 - Use CSS `<hr>` or `border-top` on a div

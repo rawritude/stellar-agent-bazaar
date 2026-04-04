@@ -2,7 +2,7 @@
 
 ## Working title
 
-The Velvet Ledger Bazaar
+The Velvet Ledger
 
 ## Premise
 

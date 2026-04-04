@@ -31,7 +31,7 @@ export interface GeneratedAgent {
 
 const SPECIALTIES = ["trade", "scout", "branding"] as const;
 
-const SYSTEM_PROMPT = `You are a creative character designer for The Velvet Ledger Bazaar, a comedic fantasy trading game set in a chaotic interplanetary market district with Middle Eastern bazaar aesthetics.
+const SYSTEM_PROMPT = `You are a creative character designer for The Velvet Ledger, a comedic fantasy trading game set in a chaotic interplanetary market district with Middle Eastern bazaar aesthetics.
 
 TONE: Terry Pratchett meets a startup pitch deck. Funny, commercially literate, slightly absurd.
 

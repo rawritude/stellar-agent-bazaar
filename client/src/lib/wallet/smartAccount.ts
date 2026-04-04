@@ -57,7 +57,7 @@ export async function connectWallet(): Promise<WalletResult> {
       accountWasmHash: "3e51f5b222dec74650f0b33367acb42a41ce497f72639230463070e666abba2c",
       webauthnVerifierAddress: "CATPTBRWVMH5ZCIKO5HN2F4FMPXVZEXC56RKGHRXCM7EEZGGXK7PICEH",
       storage: new IndexedDBStorage(),
-      rpName: "The Velvet Ledger Bazaar",
+      rpName: "The Velvet Ledger",
       // rpId intentionally omitted — defaults to window.location.hostname
     });
 

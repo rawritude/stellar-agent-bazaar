@@ -1,4 +1,4 @@
-# ASCII Art & Animation Evaluation — The Velvet Ledger Bazaar
+# ASCII Art & Animation Evaluation — The Velvet Ledger
 
 ## 1. Where ASCII Art IS Used
 
