@@ -10,6 +10,8 @@ import { canSpend, recordSpend, getBudgetStatus } from "./budget";
 import { saveGame, loadGame, getSaveSummary, deleteSave } from "./save-service";
 import { initializeGameMaster, getGameMaster } from "./game-master";
 import { getAgentWalletService } from "./agent-wallets";
+import { handleMppService, getServicePrice } from "./mpp-services";
+import { resolveStepViaMpp } from "./mpp-agent";
 import { log } from "./index";
 
 // Singleton services — persist across requests
@@ -334,6 +336,42 @@ export async function registerRoutes(
     const result = await gm.mintRuby(destination, Number(amount));
     log(`GM mint: ${amount} RUBY → ${destination.slice(0, 12)}... (${result.success ? "OK" : "FAIL"})`, "stellar");
     res.json(result);
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // MPP SERVICES — Real 402-protected counterparty endpoints
+  // ═══════════════════════════════════════════════════════════════
+
+  const MPP_ACTIONS = ["paid_intel", "trade_execution", "permit_filing", "logistics"];
+
+  for (const actionType of MPP_ACTIONS) {
+    app.post(`/api/service/${actionType}`, async (req, res) => {
+      log(`MPP service request: ${actionType} from agent ${req.body?.agentId}`, "stellar");
+      await handleMppService(req as any, res as any, actionType);
+    });
+  }
+
+  // ── Full step resolution via MPP (called by game engine) ────
+  app.post("/api/resolve-step", async (req, res) => {
+    const ctx = req.body;
+    if (!ctx.actionType || !ctx.agentId || !ctx.counterpartyId) {
+      return res.status(400).json({ error: "Missing actionType, agentId, or counterpartyId" });
+    }
+
+    const serverBaseUrl = `${req.protocol}://${req.get("host")}`;
+    log(`Resolve step: ${ctx.agentName} → ${ctx.counterpartyName} [${ctx.actionType}]`, "stellar");
+
+    const result = await resolveStepViaMpp(ctx, serverBaseUrl);
+
+    log(`Step result: ${result.success ? "SUCCESS" : "FAILED"} (paid: ${result.paid}, cost: ${result.gameCost}¤)`, "stellar");
+    res.json(result);
+  });
+
+  // Price check endpoint — agent can query before committing
+  app.post("/api/service/price-check", (req, res) => {
+    const { actionType, greedFactor, mood, trust } = req.body;
+    const price = getServicePrice(actionType, { greedFactor: greedFactor ?? 0.3, mood: mood ?? "neutral", trust });
+    res.json({ actionType, price, currency: "XLM" });
   });
 
   // ═══════════════════════════════════════════════════════════════

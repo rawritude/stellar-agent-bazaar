@@ -217,7 +217,90 @@ async function resolveActionStep(
   adapter?: SettlementAdapter,
   enableAI: boolean = false,
   brandName: string = "",
+  playerPubkey?: string,
 ): Promise<ActionStep> {
+  // ── Try server-side MPP resolution first ───────────────────
+  // If the player has a wallet and the action supports MPP,
+  // resolve via the real protocol exchange.
+  const MPP_ACTIONS = ["paid_intel", "trade_execution", "permit_filing", "logistics"];
+  if (playerPubkey && MPP_ACTIONS.includes(action)) {
+    try {
+      const res = await fetch("/api/resolve-step", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actionType: action,
+          agentId: agent.id,
+          agentName: agent.name,
+          agentTitle: agent.title,
+          agentSpecialty: agent.specialty,
+          agentQuirk: agent.quirk,
+          agentBudget: budgetPerStep,
+          counterpartyId: counterparty.id,
+          counterpartyName: counterparty.name,
+          counterpartyMood: counterparty.mood,
+          counterpartyGreed: counterparty.greedFactor,
+          counterpartyTrust: counterparty.trust ?? 0,
+          districtId,
+          missionId,
+          day,
+          playerPubkey,
+          enableAI,
+        }),
+      });
+      const mppResult = await res.json();
+
+      if (mppResult && typeof mppResult.success === "boolean") {
+        // Convert MPP result to ActionStep format
+        return {
+          actionType: action,
+          counterpartyId: counterparty.id,
+          counterpartyName: counterparty.name,
+          counterpartyEmoji: counterparty.emoji,
+          description: mppResult.serviceFlavor || mppResult.serviceData || "Transaction completed via MPP.",
+          cost: mppResult.gameCost || Math.round(budgetPerStep * 0.8),
+          settlementMode: mppResult.paid ? "testnet" : counterparty.settlementMode,
+          success: mppResult.success,
+          stellarTxId: mppResult.txHash,
+          receipt: {
+            receiptId: `MPP-${Date.now().toString(36)}`,
+            timestamp: Date.now(),
+            settlementMode: mppResult.paid ? "testnet" as const : "simulated" as const,
+            amount: mppResult.gameCost || 0,
+            fee: 0,
+            actionType: action,
+            counterpartyId: counterparty.id,
+            counterpartyName: counterparty.name,
+            status: mppResult.success ? "confirmed" as const : "failed" as const,
+            stellarTxId: mppResult.txHash,
+            explorerUrl: mppResult.explorerUrl,
+            memo: `MPP:${action}:${counterparty.id}`,
+            x402Flow: (mppResult.mppExchange || []).map((step: any) => ({
+              type: step.type === "challenge_402" ? "response_402"
+                : step.type === "payment" ? "payment"
+                : step.type === "proof" ? "mpp_verify"
+                : step.type === "service_delivered" ? "response_200"
+                : "request",
+              label: step.label,
+              detail: step.detail || "",
+            })),
+          },
+          scene: mppResult.agentReasoning ? {
+            dialogue: [],
+            agent_decision: "proceed",
+            agent_reasoning: mppResult.agentReasoning,
+            counterparty_reaction: mppResult.success ? "pleased" : "neutral",
+            outcome_modifier: 0,
+            flavor_detail: mppResult.serviceFlavor || "",
+          } : undefined,
+        };
+      }
+    } catch (err) {
+      console.warn("[engine] MPP resolution failed, falling back to local:", err);
+    }
+  }
+
+  // ── Fallback: local resolution (dice rolls + settlement adapter) ──
   // Base success from counterparty reliability
   let stepChance = counterparty.reliability;
 
@@ -385,6 +468,7 @@ async function resolveSingleMission(
   enableAI: boolean = false,
   brandName: string = "",
   activeEvents: ActiveEvent[] = [],
+  playerPubkey?: string,
 ): Promise<{ result: MissionResult; updatedCounterparties: Counterparty[] }> {
   const successChance = calculateSuccessChance(mission);
   const success = roll(successChance);
@@ -408,7 +492,7 @@ async function resolveSingleMission(
     const cp = findCounterparty(counterparties, action, district.id, agent);
     if (!cp) continue;
 
-    const step = await resolveActionStep(action, cp, agent, budgetPerStep, riskPosture, mission.id, district.id, day, adapter, enableAI, brandName);
+    const step = await resolveActionStep(action, cp, agent, budgetPerStep, riskPosture, mission.id, district.id, day, adapter, enableAI, brandName, playerPubkey);
     actionSteps.push(step);
     usedCounterpartyIds.add(cp.id);
 
@@ -537,7 +621,7 @@ async function resolveSingleMission(
 
 // ── Day Resolution ───────────────────────────────────────────
 
-export async function resolveDay(state: GameState, adapter?: SettlementAdapter, enableAI: boolean = false): Promise<GameState> {
+export async function resolveDay(state: GameState, adapter?: SettlementAdapter, enableAI: boolean = false, playerPubkey?: string): Promise<GameState> {
   if (state.activeMissions.length === 0) {
     return {
       ...state,
@@ -562,7 +646,7 @@ export async function resolveDay(state: GameState, adapter?: SettlementAdapter, 
   const resolved: ActiveMission[] = [];
 
   for (const mission of state.activeMissions) {
-    const { result, updatedCounterparties } = await resolveSingleMission(mission, currentCounterparties, state.day, adapter, enableAI, state.brandName, state.activeEvents || []);
+    const { result, updatedCounterparties } = await resolveSingleMission(mission, currentCounterparties, state.day, adapter, enableAI, state.brandName, state.activeEvents || [], playerPubkey);
     currentCounterparties = updatedCounterparties;
     resolved.push({
       ...mission,

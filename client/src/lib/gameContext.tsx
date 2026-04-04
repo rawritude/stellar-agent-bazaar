@@ -200,12 +200,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const resolveDayAsync = useCallback(async (adapter?: SettlementAdapter) => {
     setIsResolving(true);
     try {
-      const resolvedState = await resolveDay(state, adapter ?? stellarAdapter ?? undefined, aiEnabled);
+      const resolvedState = await resolveDay(state, adapter ?? stellarAdapter ?? undefined, aiEnabled, wallet?.address);
       dispatch({ type: "RESOLVE_DAY_COMPLETE", resolvedState });
     } finally {
       setIsResolving(false);
     }
-  }, [state, stellarAdapter, aiEnabled]);
+  }, [state, stellarAdapter, aiEnabled, wallet]);
 
   return (
     <GameContext.Provider value={{ state, dispatch, resolveDayAsync, isResolving, stellarAdapter, setStellarAdapter, aiEnabled, setAiEnabled, wallet, setWallet }}>

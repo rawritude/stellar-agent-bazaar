@@ -685,8 +685,9 @@ export function buildMissionNarrative(mission: ActiveMission): TerminalLine[] {
 
       // x402/MPP Protocol Exchange
       if (step.receipt?.x402Flow && step.receipt.x402Flow.length > 0) {
+        const isReal = step.receipt.settlementMode === "testnet";
         lines.push(blank());
-        lines.push(indented(6, span("x402/MPP Protocol:", "teal", true)));
+        lines.push(indented(6, span(isReal ? "MPP Protocol Exchange:" : "x402/MPP Protocol:", "teal", true)));
         step.receipt.x402Flow.forEach(x => {
           const color = x.type === "response_402" ? "orange" as const
             : x.type === "mpp_verify" || x.type === "response_200" ? "green" as const
